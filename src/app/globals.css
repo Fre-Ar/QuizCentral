@@ -1,0 +1,57 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --foreground-rgb: 0, 0, 0;
+  --background-start-rgb: 255, 255, 255;
+  --background-end-rgb: 255, 255, 255;
+  --input-text-color: var(--foreground-rgb);
+  --input-background-color: var(--background-start-rgb);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --foreground-rgb: 255, 255, 255;
+    --background-start-rgb: 0, 0, 0;
+    --background-end-rgb: 0, 0, 0;
+    --input-text-color: var(--foreground-rgb);
+    --input-background-color: var(--background-start-rgb);
+  }
+}
+
+input {
+  color: rgb(var(--input-text-color));
+  background-color: rgb(var(--input-background-color));
+}
+
+body {
+  color: rgb(var(--foreground-rgb));
+  background: linear-gradient(
+      to bottom,
+      transparent,
+      rgb(var(--background-end-rgb))
+    )
+    rgb(var(--background-start-rgb));
+}
+
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+}
+
+.center-fix::before , 
+.center-fix::after {
+  content:'';
+  flex:1;
+}
+
+.selected-div::after{
+  content: '*';
+  color: red;
+  margin-left: 4px; /* Adjust the spacing as needed */
+  font-size: 3em; /* Adjust the size as needed */
+}
+
+
