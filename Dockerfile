@@ -16,7 +16,9 @@ WORKDIR /app
 COPY . .
 COPY --from=deps /app/node_modules ./node_modules
 
-RUN echo ${SUPABASE_URL}
+RUN echo "Supabase URL: ${SUPABASE_URL}"  
+RUN echo "Supabase Anon Key: ${SUPABASE_ANON_KEY}"  
+RUN echo "Next Public Base URL: ${NEXT_PUBLIC_BASE_URL}" 
 
 ENV SUPABASE_URL=${SUPABASE_URL}
 ENV SUPABASE_ANON_KEY=${SUPABASE_ANON_KEY}
