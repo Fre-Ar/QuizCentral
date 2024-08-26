@@ -11,7 +11,7 @@ import DragHandle from '@/components/drag-handle';
 import Accordion from '@/components/accordion';
 import Sidebar from '@/components/sidebar';
 import SideButton from '@/components/side-button';
-import { parseQuizData, downloadQuizSession } from '@/components/session-context';
+import { parseQuizData, downloadQuizSession } from '@/lib/utils';
 
 import { FaCog, FaCodeBranch, FaCss3Alt, FaFolder, FaDatabase } from "react-icons/fa";
 

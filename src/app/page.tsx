@@ -15,9 +15,8 @@ import { supabase } from '@/lib/supabaseClient';
 import { useRouter } from 'next/navigation';
 import { QuizSession } from '@/components/session-context';
 import { QuizBlock } from '@/components/quiz_components/quiz-comp';
-import { parseQuizData } from '@/components/session-context';
-import { getCookie } from '@/components/session-context';
-
+import { parseQuizData } from '@/lib/utils';
+import { getCookie } from '@/lib/utils';
 
 export default function Home() {
 
