@@ -11,7 +11,6 @@ import { ContainerBlock } from '@/components/quiz_components/container-comp';
 import { ButtonBlock } from '@/components/quiz_components/variables/button-comp';
 import { InputBlock } from '@/components/quiz_components/variables/input-comp';
 import { TextBlock } from '@/components/quiz_components/info/text-comp';
-import { supabase } from '@/lib/supabaseClient';
 import { useRouter } from 'next/navigation';
 import { QuizSession } from '@/components/session-context';
 import { QuizBlock } from '@/components/quiz_components/quiz-comp';
@@ -65,19 +64,22 @@ export default function Home() {
     let loadedQuizSession;
 
     if (existingHash) {
-      const shouldLoad = window.confirm('A quiz is already in progress. Do you want to load it?');
+      const shouldLoad = window.confirm(`A quiz with id: ${existingHash} is already in progress. Do you want to load it?`);
       if (shouldLoad) {
-        const { data, error } = await supabase
-          .from('quizzes')
-          .select('quiz_data')
-          .eq('hash', existingHash)
-          .single();
+        const response = await fetch('/api/quiz/load-quiz', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({hashKey: existingHash}),
+        });
+        const result = await response.json();
 
-        if (error || !data) {
-          alert('Failed to load quiz. Please try again.');
+        if (result.error) {
+          alert(result.error);
           return;  // Exit if there's an error loading the quiz
         } else {
-          loadedQuizSession = parseQuizData(data.quiz_data);
+          loadedQuizSession = parseQuizData(result.quizData.quiz_data);
         }
 
         setQuizSession(loadedQuizSession);

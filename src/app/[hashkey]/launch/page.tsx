@@ -22,12 +22,12 @@ export default function Page()  {
   const saveQuizToSupabase = async (quizSession: QuizSession, launchedGroup: Group) => {
     try {
 
-      const response = await fetch('/api/quiz/save-quiz', {
+      const response = await fetch('/api/quiz/launch-quiz', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ quizSession}),
+        body: JSON.stringify({quizSession: quizSession, launchedGroup: launchedGroup}),
       });
 
       const data = await response.json();
@@ -57,9 +57,9 @@ export default function Page()  {
         body: JSON.stringify({
           to: email,
           subject: `Invitation to Access Quiz - ${hashKey}`,
-          text: `You've been invited to access the quiz. Use the following link: ${process.env.BASE_URL}/access/${hashKey}/${accessId}`,
+          text: `You've been invited to access the quiz. Use the following link: ${process.env.NEXT_PUBLIC_BASE_URL}/access/${hashKey}/${accessId}`,
           html: `<p>You've been invited to access the quiz. Use the following link:</p>
-                 <a href="${process.env.BASE_URL}/access/${hashKey}/${accessId}">${process.env.BASE_URL}/access/${hashKey}/${accessId}</a>`,
+                 <a href="${process.env.NEXT_PUBLIC_BASE_URL}/access/${hashKey}/${accessId}">${process.env.NEXT_PUBLIC_BASE_URL}/access/${hashKey}/${accessId}</a>`,
         }),
       });
 

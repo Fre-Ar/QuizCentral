@@ -73,7 +73,7 @@ const AccessQuizPage: React.FC<QuizPageProps> = ({ params }) => {
                     headers: {
                       'Content-Type': 'application/json',
                     },
-                    body: JSON.stringify({ hashKey, accessId }),
+                    body: JSON.stringify({hashKey: hashKey, accessId: accessId }),
                   });
                 const result = await response.json();
                   

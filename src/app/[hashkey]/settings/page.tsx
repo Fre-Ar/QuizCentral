@@ -35,19 +35,6 @@ export default function Page() {
   const [leftSidebarWidth, setLeftSidebarWidth] = useState(DEFAULT_SIDEBAR_WIDTH);
   const [dragging, setDragging] = useState<string | null>(null);
 
-  const saveQuiz = async (quizJson: any, hashKey: string, groupData: any) => {
-    const response = await fetch('/api/quiz/save-quiz', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ quizSession}),
-    });
-  
-    const data = await response.json();
-    return data;
-  };
-
   const saveQuizToSupabase = async (quizSession: QuizSession) => {
     try {
 
@@ -56,7 +43,7 @@ export default function Page() {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ quizSession}),
+        body: JSON.stringify({quizJson: quizSession}),
       });
     
       const data = await response.json();
