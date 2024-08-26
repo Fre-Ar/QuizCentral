@@ -35,22 +35,39 @@ export default function Page() {
   const [leftSidebarWidth, setLeftSidebarWidth] = useState(DEFAULT_SIDEBAR_WIDTH);
   const [dragging, setDragging] = useState<string | null>(null);
 
+  const saveQuiz = async (quizJson: any, hashKey: string, groupData: any) => {
+    const response = await fetch('/api/quiz/save-quiz', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ quizSession}),
+    });
+  
+    const data = await response.json();
+    return data;
+  };
+
   const saveQuizToSupabase = async (quizSession: QuizSession) => {
     try {
 
-      // Insert the quiz into the quizzes table if it doesn't already exist
-      const { data: quizData, error: quizError } = await supabase
-        .from('quizzes')
-        .upsert({ hash: quizSession.hash, quiz_data: quizSession }, { onConflict: 'hash' })
-        .select('id');
+      const response = await fetch('/api/quiz/save-quiz', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ quizSession}),
+      });
+    
+      const data = await response.json();
 
-      if (quizError) throw quizError;
+      if (data.error) throw new Error(data.status);
 
       document.cookie = `quizHash=${quizSession?.hash}; path=/; max-age=${7 * 24 * 60 * 60}; secure; samesite=strict`;
 
-      alert(`Quiz "${quizSession.settings.quizSettings.title}" saved successfully!`);
+      alert(data.message);
     } catch (error) {
-      console.error('Error saving launched group and users:', error);
+      console.error('Error saving quiz to database:', error);
     }
   };
 

@@ -68,40 +68,26 @@ const AccessQuizPage: React.FC<QuizPageProps> = ({ params }) => {
     useEffect(() => {
         const fetchQuizData = async () => {
             try {
-                // Verify if the accessId is valid for the given hashKey in the users table
-                const { data: userData, error: userError } = await supabase
-                .from('users')
-                .select('id')
-                .eq('access_id', accessId)
-                .eq('quiz_hash', hashKey)
-                .single();
-
-                if (userError || !userData) {
-                setError('Invalid access ID or unauthorized access');
-                setLoading(false);
-                return;
-                }
-
-                // Fetch the quiz data using the hashKey directly from quizzes table
-                const { data: quizData, error: quizError } = await supabase
-                .from('quizzes')
-                .select('quiz_data')
-                .eq('hash', hashKey)
-                .single();
-
-                if (quizError || !quizData) {
-                setError('Quiz not found');
-                setLoading(false);
-                return;
-                }
-
-                setQuizData(quizData.quiz_data);
-                setLoading(false);
+                const response = await fetch('/api/quiz/get-quiz', {
+                    method: 'POST',
+                    headers: {
+                      'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ hashKey, accessId }),
+                  });
+                const result = await response.json();
+                  
+              if (result.error) {
+                setError(result.error || 'An error occurred while fetching the quiz data');
+              } else {
+                setQuizData(result.quizData.quiz_data);
+              }
             } catch (err) {
-                setError('An error occurred while fetching the quiz data');
-                setLoading(false);
+              setError('An error occurred while fetching the quiz data');
+            } finally {
+              setLoading(false);
             }
-        };
+          };
 
         fetchQuizData();
     }, [hashKey, accessId]);

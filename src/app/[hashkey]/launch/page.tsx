@@ -19,57 +19,23 @@ export default function Page()  {
 
   const [expandedGroups, setExpandedGroups] = useState<string[]>([]);
 
-
-
   const saveQuizToSupabase = async (quizSession: QuizSession, launchedGroup: Group) => {
     try {
 
-      // Insert the quiz into the quizzes table if it doesn't already exist
-      const { data: quizData, error: quizError } = await supabase
-        .from('quizzes')
-        .upsert({ hash: quizSession.hash, quiz_data: quizSession }, { onConflict: 'hash' })
-        .select('id');
+      const response = await fetch('/api/quiz/save-quiz', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ quizSession}),
+      });
 
-      if (quizError) throw quizError;
+      const data = await response.json();
+
+      if (data.error) throw new Error(data.error);
 
       document.cookie = `quizHash=${quizSession?.hash}; path=/; max-age=${7 * 24 * 60 * 60}; secure; samesite=strict`;
 
-      const quizId = quizData[0].id;
-
-      // Insert the launched group into the groups table
-      const { data: groupData, error: groupError } = await supabase
-        .from('groups')
-        .insert([{
-          name: launchedGroup.name,
-          permission: launchedGroup.permission,
-          settings: launchedGroup.settings,
-          quiz_id: quizId,
-        }])
-        .select('id');
-
-      if (groupError) throw groupError;
-
-      const groupDbId = groupData[0].id;
-
-
-      for(const user of launchedGroup.emails){
-
-        const { data: userData, error: userError } = await supabase
-        .from('users')
-        .upsert(
-          {
-            quiz_hash: quizSession.hash,
-            access_id: user.accessId,
-            group_id: groupDbId,
-            email: user.email,
-          },
-          { onConflict: 'quiz_hash,access_id' }  // Use composite primary key columns
-        ).select('id');
-
-        if (userError) throw userError;
-      }
-
-      console.log(`Group "${launchedGroup.name}" and associated users saved successfully!`);
     } catch (error) {
       console.error('Error saving launched group and users:', error);
     }
@@ -91,9 +57,9 @@ export default function Page()  {
         body: JSON.stringify({
           to: email,
           subject: `Invitation to Access Quiz - ${hashKey}`,
-          text: `You've been invited to access the quiz. Use the following link: ${process.env.NEXT_PUBLIC_BASE_URL}/access/${hashKey}/${accessId}`,
+          text: `You've been invited to access the quiz. Use the following link: ${process.env.BASE_URL}/access/${hashKey}/${accessId}`,
           html: `<p>You've been invited to access the quiz. Use the following link:</p>
-                 <a href="${process.env.NEXT_PUBLIC_BASE_URL}/access/${hashKey}/${accessId}">${process.env.NEXT_PUBLIC_BASE_URL}/access/${hashKey}/${accessId}</a>`,
+                 <a href="${process.env.BASE_URL}/access/${hashKey}/${accessId}">${process.env.BASE_URL}/access/${hashKey}/${accessId}</a>`,
         }),
       });
 
