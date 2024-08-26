@@ -1,8 +1,4 @@
 
-ARG SUPABASE_URL
-ARG SUPABASE_ANON_KEY
-ARG NEXT_PUBLIC_BASE_URL
-
 # Install dependencies only when needed
 FROM node:18-alpine AS deps
 WORKDIR /app
@@ -15,6 +11,11 @@ FROM node:18-alpine AS builder
 WORKDIR /app
 COPY . .
 COPY --from=deps /app/node_modules ./node_modules
+
+
+ARG SUPABASE_URL
+ARG SUPABASE_ANON_KEY
+ARG NEXT_PUBLIC_BASE_URL
 
 RUN echo "Supabase URL: ${SUPABASE_URL}"  
 RUN echo "Supabase Anon Key: ${SUPABASE_ANON_KEY}"  
