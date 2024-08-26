@@ -19,7 +19,8 @@ const config: Config = {
         'uni-light': '#8d8d8d',
         'uni-grey': '#5c5c5c',
         'uni-black': '#3b3b3b',
-        'uni-selec': '#00a9db'
+        'uni-selec': '#00a9db',
+        'uni-pink': '#ec808c'
       },
     },
   },

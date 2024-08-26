@@ -12,7 +12,6 @@ export default function AccessQuiz() {
 
     const handleSubmit = () => {
         console.log(`Session ID: ${sessionId}`);
-        // Handle the session ID submission logic here
     };
     return (
         <div className="min-h-screen flex flex-col">

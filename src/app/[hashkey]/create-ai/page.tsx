@@ -1,6 +1,9 @@
 'use client';
 
 import React, { useState, useEffect, useRef} from 'react';
+import { useQuiz } from '@/components/session-context';
+import { useRouter } from 'next/navigation';
+
 import Header from '@/components/header';
 import NavMenu from '@/components/nav-menu';
 import DragHandle from '@/components/drag-handle';
@@ -19,6 +22,9 @@ const DEFAULT_SIDEBAR_WIDTH = 20;
 const MAX_SIDEBAR_WIDTH = 100;
 
 export default function Page() {
+  const { quizSession, setQuizSession } = useQuiz();
+  const router = useRouter()
+
   const [leftTab, setLeftTab] = useState<'settings' | 'conditions' | 'styling'>('settings');
   const [leftSidebarWidth, setLeftSidebarWidth] = useState(DEFAULT_SIDEBAR_WIDTH);
   const [dragging, setDragging] = useState<string | null>(null);
@@ -55,12 +61,17 @@ export default function Page() {
     };
   }, [dragging]);
 
-
+  useEffect(() => {
+    // If quizData doesn't exist, redirect to the homepage
+    if (!quizSession) {
+      router.push('/');
+    }
+  }, [quizSession, router]);
 
   return (
     <div className="min-h-screen max-h-screen flex flex-col">
       <Header />
-      <NavMenu />
+      <NavMenu tab="ai"/>
       <div className="flex flex-grow overflow-hidden">
 
 

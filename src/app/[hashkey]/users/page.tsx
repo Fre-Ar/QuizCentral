@@ -1,6 +1,9 @@
 'use client';
 
 import React, { useState, useEffect, useRef} from 'react';
+import { useQuiz, Group, GroupSettings, User } from '@/components/session-context';
+import { useRouter } from 'next/navigation';
+
 import Header from '@/components/header';
 import NavMenu from '@/components/nav-menu';
 import DragHandle from '@/components/drag-handle';
@@ -12,71 +15,124 @@ const MIN_SIDEBAR_WIDTH = 0;
 const DEFAULT_SIDEBAR_WIDTH = 20;
 const MAX_SIDEBAR_WIDTH = 100;
 
-interface Group {
-  id: string;
-  name: string;
-  emails: string[];
-  permission: string;
-}
 
 export default function Page()  {
+  const { quizSession, setQuizSession } = useQuiz();
+  const router = useRouter()
+
   const [leftSidebarWidth, setLeftSidebarWidth] = useState(DEFAULT_SIDEBAR_WIDTH);
   const [rightSidebarWidth, setRightSidebarWidth] = useState(DEFAULT_SIDEBAR_WIDTH);
   const [dragging, setDragging] = useState<string | null>(null);
 
   const [nextid, setNextId] = useState<number>(0);
-  const [groups, setGroups] = useState<Group[]>([]);
   const [selectedGroup, setSelectedGroup] = useState<string | null>(null);
   const [selectedEmail, setSelectedEmail] = useState<{ groupId: string; emailIndex: number } | null>(null);
   
   const containerRef = useRef<HTMLDivElement>(null);
 
   const handleAddGroup = () => {
-    setNextId(nextid+1)
-    const newGroup: Group = {
-      id: `group-${nextid}`,
-      name: `Group ${nextid}`,
-      emails: [],
-      permission: 'Viewer',
-    };
-    setGroups([...groups, newGroup]);
-  };
 
-  const handleAddEmail = (groupId: string) => {
-    setGroups(groups.map(group => group.id === groupId ? { ...group, emails: [...group.emails, 'example@gmail.com'] } : group));
-  };
+    if(quizSession){
 
-  const handleEditEmail = (groupId: string, emailIndex: number, newEmail: string) => {
-    setGroups(groups.map(group => group.id === groupId ? {
-      ...group,
-      emails: group.emails.map((email, index) => index === emailIndex ? newEmail : email),
-    } : group));
-  };
+      setNextId(nextid+1)
 
-  const handleDeleteEmail = (groupId: string, emailIndex: number) => {
-    setGroups(groups.map(group => 
-      group.id === groupId ? {
-      ...group,
-      emails: group.emails.filter((_, index) => index !== emailIndex),
-    } : group));
-  };
+      const settings: GroupSettings = {
+        submitResponse: false,
+        startAt: false,
+        endAt: false,
+        lastFor: false,
+      }
+  
+      const newGroup: Group = {
+        id: `group-${nextid}`,
+        name: `Group ${nextid}`,
+        emails: [],
+        permission: 'Viewer',
+        settings: settings
+      };
 
-  const handleEditGroup = (groupId: string, newName: string) => {
-    setGroups(groups.map(group =>
-      group.id === groupId ? { ...group, name: newName } : group
-    ));
-  };
-
-  const handleDeleteGroup = (groupId: string) => {
-    setGroups(groups.filter(group => group.id !== groupId));
-    if (selectedGroup === groupId) {
-      setSelectedGroup(null);
+      // Update the quiz session groups
+      const updatedGroups = [...quizSession.groups, newGroup];
+  
+      // Update the quiz session
+      setQuizSession({ ...quizSession, groups: updatedGroups });
     }
   };
 
-  const handlePermissionChange = (groupId: string|null, permission: string) => {
-    if(groupId == null) return
-    setGroups(groups.map(group => group.id === groupId ? { ...group, permission } : group));
+  const handleAddEmail = (groupId: string, newEmail: string='example@gmail.com') => {
+    if (quizSession) {
+      const updatedGroups = quizSession.groups.map(group =>
+        group.id === groupId
+          ? { ...group, emails: [...group.emails, {email: newEmail, accessId: ''}] }
+          : group
+      );
+
+      setQuizSession({ ...quizSession, groups: updatedGroups as Group[] });
+    }
+  };
+
+  const handleEditEmail = (groupId: string, emailIndex: number, newEmail: string) => {
+    if (quizSession) {
+      const updatedGroups = quizSession.groups.map(group =>
+        group.id === groupId
+          ? {
+              ...group,
+              emails: group.emails.map((email, index) =>
+                index === emailIndex ? {email: newEmail, accessId: ''} : email
+              ),
+            }
+          : group
+      );
+
+      setQuizSession({ ...quizSession, groups: updatedGroups });
+    }
+  };
+
+  const handleDeleteEmail = (groupId: string, emailIndex: number) => {
+    if (quizSession) {
+      const updatedGroups = quizSession.groups.map(group =>
+        group.id === groupId
+          ? {
+              ...group,
+              emails: group.emails.filter((_, index) => index !== emailIndex),
+            }
+          : group
+      );
+
+      setQuizSession({ ...quizSession, groups: updatedGroups });
+    }
+  };
+
+  const handleEditGroup = (groupId: string, newName: string) => {
+    if (quizSession) {
+      const updatedGroups = quizSession.groups.map(group =>
+        group.id === groupId ? { ...group, name: newName } : group
+      );
+
+      setQuizSession({ ...quizSession, groups: updatedGroups });
+    }
+  };
+
+  const handleDeleteGroup = (groupId: string) => {
+    if (quizSession) {
+      const updatedGroups = quizSession.groups.filter(group => group.id !== groupId);
+
+      setQuizSession({ ...quizSession, groups: updatedGroups });
+
+      if (selectedGroup === groupId) {
+        setSelectedGroup(null);
+      }
+    }
+  };
+
+  const handlePermissionChange = (groupId: string | null, permission: string) => {
+    if (groupId && quizSession) {
+      const updatedGroups = quizSession.groups.map(group =>
+        group.id === groupId ? { ...group, permission } : group
+      );
+
+      setQuizSession({ ...quizSession, groups: updatedGroups });
+    }
   };
 
   const handleGroupSelect = (groupId: string) => {
@@ -97,6 +153,35 @@ export default function Page()  {
       setSelectedEmail(null);
     }
   };
+
+  const handlePaste = async (e: ClipboardEvent) => {
+    if (selectedGroup && quizSession) {
+        const text = e.clipboardData?.getData('text');
+        if (text) {
+            const lines = text.split('\n').map((line) => line.trim()).filter((line) => line.length > 0);
+
+            // Find the selected group
+            const updatedGroups = quizSession.groups.map(group => {
+                if (group.id === selectedGroup) {
+                    // Add all new emails to the selected group's emails array
+                    const newEmails = [...group.emails];
+                    lines.forEach(line => {
+                        newEmails.push({ email: line, accessId: '' });
+                    });
+
+                    return {
+                        ...group,
+                        emails: newEmails,
+                    };
+                }
+                return group;
+            });
+
+            // Update the quiz session with the modified groups
+            setQuizSession({ ...quizSession, groups: updatedGroups });
+        }
+    }
+};
 
 
   const handleMouseDown = (sidebar: string) => {
@@ -131,22 +216,31 @@ export default function Page()  {
     document.addEventListener('mousemove', handleMouseMove);
     document.addEventListener('mouseup', handleMouseUp);
     document.addEventListener('click', handleClickOutside, true);
+    document.addEventListener('paste', handlePaste); 
     return () => {
       document.removeEventListener('mousemove', handleMouseMove);
       document.removeEventListener('mouseup', handleMouseUp);
       document.removeEventListener('click', handleClickOutside, true);
+      document.removeEventListener('paste', handlePaste);
     };
-  }, [dragging]);
+  }, [dragging, selectedGroup, quizSession]);
+
+  useEffect(() => {
+    // If quizData doesn't exist, redirect to the homepage
+    if (!quizSession) {
+      router.push('/');
+    }
+  }, [quizSession, router]);
 
   return (
     <div className="min-h-screen max-h-screen flex flex-col">
       <Header />
-      <NavMenu />
+      <NavMenu tab="users"/>
       <div className="flex flex-grow overflow-hidden">
 
         <Sidebar width={`${leftSidebarWidth}%`}>
         <h2 className="text-lg font-bold mb-4 ml-2">Manage Users & Groups</h2>
-          <SideButton title='Import Group'>
+          <SideButton title='Import Group' chosen={false}>
             <FaFolderOpen size="2em" className="p-1"/>
           </SideButton>
 
@@ -159,15 +253,15 @@ export default function Page()  {
             width: `calc(100% - ${leftSidebarWidth}% - ${rightSidebarWidth}% - 10px)` // 10px for the resizers
           }}>
           <div className="flex flex-col border-x border-uni-grey mx-4 p-4 gap-y-4 ">
-            <span className="flex flex-row w-full gap-x-2 overflow-hidden items-center">
-              <FaEnvelope size="4em" className=" bg-uni-grey rounded p-2"/>
+            <span className="flex flex-row w-full gap-x-2 items-center">
+              <FaEnvelope size="4em" className="text-white bg-uni-grey rounded p-2"/>
               <div className="">
                 <h3 className="font-bold">Users & Groups</h3>
                 <p className="text-xs">Create a group and assign users identified by their emails to it.</p>
               </div>
             </span>
             <button className="bg-uni-blue text-white font-bold py-2 px-4 rounded" onClick={handleAddGroup}>+ Add Group</button>
-            {groups.map(group => (
+            {quizSession?.groups.map(group => (
               <div key={group.id} className={`border p-4 rounded ${selectedGroup === group.id ? 'border-uni-selec' : 'border-uni-grey'}`} onClick={(e) => { e.stopPropagation(); handleGroupSelect(group.id); }}>
                 <div className="flex justify-between items-center mb-2">
                   <input
@@ -197,7 +291,7 @@ export default function Page()  {
                         <FaEnvelope size="1.5em" className="text-uni-red"/>
                         <input
                           type="text"
-                          value={email}
+                          value={email.email}
                           onChange={(e) => handleEditEmail(group.id, index, e.target.value)}
                           className="ml-1 pl-1 w-full rounded focus:outline-none focus:ring-2 focus:ring-uni-blue"
                           onClick={(e) => { e.stopPropagation(); handleEmailSelect(group.id, index); }}
@@ -213,7 +307,7 @@ export default function Page()  {
                     </li>
                   ))}
                   <button className="flex flex-row items-center gap-x-2" onClick={() => handleAddEmail(group.id)}>
-                    <FaPlus size="1.2em" className="bg-uni-grey rounded p-0.5"/>
+                    <FaPlus size="1.2em" className="text-white bg-uni-grey rounded p-0.5"/>
                     New Email
                     </button>
                 </ul>
@@ -229,7 +323,7 @@ export default function Page()  {
           <div className="w-full px-2 min-w-max">
             {selectedGroup && <select 
               className="w-full border border-uni-black bg-uni-light p-2"
-              value={groups.find(group => group.id === selectedGroup)?.permission || 'Viewer'}
+              value={quizSession?.groups.find(group => group.id === selectedGroup)?.permission || 'Viewer'}
               onChange={(e) => handlePermissionChange(selectedGroup, e.target.value)}
             >
               <option value="Viewer">Viewer</option>

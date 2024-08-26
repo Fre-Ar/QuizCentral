@@ -47,11 +47,4 @@ body {
   flex:1;
 }
 
-.selected-div::after{
-  content: '*';
-  color: red;
-  margin-left: 4px; /* Adjust the spacing as needed */
-  font-size: 3em; /* Adjust the size as needed */
-}
-
 
