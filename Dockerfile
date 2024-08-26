@@ -1,4 +1,8 @@
 
+ARG SUPABASE_URL
+ARG SUPABASE_ANON_KEY
+ARG NEXT_PUBLIC_BASE_URL
+
 # Install dependencies only when needed
 FROM node:18-alpine AS deps
 WORKDIR /app
@@ -11,6 +15,14 @@ FROM node:18-alpine AS builder
 WORKDIR /app
 COPY . .
 COPY --from=deps /app/node_modules ./node_modules
+
+RUN echo ${SUPABASE_URL}
+
+ENV SUPABASE_URL=${SUPABASE_URL}
+ENV SUPABASE_ANON_KEY=${SUPABASE_ANON_KEY}
+ENV NEXT_PUBLIC_BASE_URL=${NEXT_PUBLIC_BASE_URL}
+
+
 RUN npm run build
 
 # Production image, copy all the files and run next
