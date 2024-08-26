@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { supabase } from '@/lib/supabaseClient';
 import Header from '@/components/header';
 
 import {InputBlock} from '@/components/quiz_components/variables/input-comp';

@@ -3,7 +3,6 @@
 import React, { useState, useEffect, useRef} from 'react';
 import { useQuiz } from '@/components/session-context';
 import { useRouter } from 'next/navigation';
-import { supabase } from '@/lib/supabaseClient';
 
 import Header from '@/components/header';
 import NavMenu from '@/components/nav-menu';

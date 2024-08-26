@@ -1,7 +1,5 @@
 'use client';
 
-import { sendEmail } from '@/lib/email';
-import { supabase } from '@/lib/supabaseClient';
 import React, { useState, useEffect, useRef} from 'react';
 import { useQuiz, Group, QuizSession } from '@/components/session-context';
 import { useRouter } from 'next/navigation';
