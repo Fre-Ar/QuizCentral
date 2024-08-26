@@ -11,21 +11,12 @@ import { ContainerBlock } from '@/components/quiz_components/container-comp';
 import { ButtonBlock } from '@/components/quiz_components/variables/button-comp';
 import { InputBlock } from '@/components/quiz_components/variables/input-comp';
 import { TextBlock } from '@/components/quiz_components/info/text-comp';
-import { parseQuizData } from './[hashkey]/settings/page';
 import { supabase } from '@/lib/supabaseClient';
 import { useRouter } from 'next/navigation';
 import { QuizSession } from '@/components/session-context';
-
-export const getCookie = (name: string='quizHash'): string | null => {
-  const nameEQ = name + "=";
-  const ca = document.cookie.split(';');
-  for (let i = 0; i < ca.length; i++) {
-    let c = ca[i];
-    while (c.charAt(0) === ' ') c = c.substring(1, c.length); // Remove leading spaces
-    if (c.indexOf(nameEQ) === 0) return c.substring(nameEQ.length, c.length);
-  }
-  return null;
-};
+import { QuizBlock } from '@/components/quiz_components/quiz-comp';
+import { parseQuizData } from '@/components/session-context';
+import { getCookie } from '@/components/session-context';
 
 
 export default function Home() {
@@ -126,3 +117,4 @@ export default function Home() {
     </div>
   );
 }
+

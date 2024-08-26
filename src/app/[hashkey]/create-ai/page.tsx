@@ -76,13 +76,13 @@ export default function Page() {
 
 
       <Sidebar width={`${leftSidebarWidth}%`}>
-        <SideButton title='Settings'>
+        <SideButton title='Settings' chosen={false}>
             <FaCog size="2em" className="p-1" />
         </SideButton>
-        <SideButton title='Conditions'>
+        <SideButton title='Conditions' chosen={false}>
             <FaCodeBranch size="2em" className="p-1" />
         </SideButton>
-        <SideButton title='Global Styling'>
+        <SideButton title='Global Styling' chosen={false}>
             <FaCss3Alt size="2em" className="p-1" />
         </SideButton>
         
