@@ -18,8 +18,8 @@ export class ContainerBlock extends QuizBlock {
   
   children: QuizBlock[];
 
-  constructor(id: string, style: string = "", rows: number = 1, columns: number = 1, children: QuizBlock[] = []) {
-    super(id, style);
+  constructor(id: string, style: string = "", rows: number = 1, columns: number = 1, children: QuizBlock[] = [], hidden: boolean=false) {
+    super(id, style, hidden);
     this.rows = rows;
     this.columns = columns;
     this.children = children;
@@ -53,15 +53,20 @@ export class ContainerBlock extends QuizBlock {
        prop === 'style' ? value : this.style,
        prop === 'rows' ? value : this.rows,
        prop === 'columns' ? value : this.columns,
-      this.children);
+      this.children,
+      prop === 'hidden' ? value : this.hidden);
   }
+}
+
+const sharedStyle= (ClassName: string | undefined): string =>{
+  return `flex flex-col border-uni-grey border min-h-5 w-full ${ClassName ? ClassName : ''}  space-y-2 p-1`
 }
 
 const ContainerComp: React.FC<ContainerCompProps> = ({ID, ClassName, children}) => {
   return (
     <div 
     id={ID}
-    className={`flex flex-col border-uni-grey border min-h-5 w-full ${ClassName==='' ? 'gap-y-1 m-2' : ClassName}`}
+    className={sharedStyle(ClassName)}
     >
         {children}
     </div>
@@ -77,7 +82,7 @@ const ContainerDisplay: React.FC<ContainerDisplayProps> = ({ID, ClassName, child
   return (
     <div 
     id={ID}
-    className={`flex flex-col border-uni-grey border min-h-5 w-full ${ClassName==='' ? 'gap-y-1 m-2' : ClassName}`}>
+    className={sharedStyle(ClassName)}>
       {children}
     </div>
   );

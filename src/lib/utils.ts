@@ -4,6 +4,7 @@ import { TextBlock } from "@/components/quiz_components/info/text-comp";
 import { ButtonBlock } from "@/components/quiz_components/variables/button-comp";
 import { InputBlock } from "@/components/quiz_components/variables/input-comp";
 import { QuizSession } from "@/components/session-context";
+import { types, VarBlock } from "@/components/quiz_components/variables/var-comp";
 
 
 export function downloadQuizSession(quizSession: any, filename: string = 'quizSession.json') {
@@ -37,13 +38,38 @@ export function downloadQuizSession(quizSession: any, filename: string = 'quizSe
     if ('children' in block && Array.isArray(block.children)) {
       // Recursively parse children
       const children = block.children.map(parseQuizBlock);
-      return new ContainerBlock(block.id, block.style || '', block.rows || 1, block.columns || 1, children);
+      return new ContainerBlock(block.id, block.style || '', block.rows || 1, block.columns || 1, children, block.hidden || false);
     } else if (block.id === 'submit') {
-      return new ButtonBlock(block.id, block.style || '', block.text || '');
+      return new ButtonBlock(block.id, block.style || '', block.text || '', block.hidden || false);
+    } else if ('type' in block && typeof block.type === 'string' && (types.includes(block.type) || block.type==='')) {
+      return new VarBlock(
+        block.id,
+        block.type || 'button',
+        block.style || '',
+        block.value || '',
+        block.name || '',
+        block.options || [],
+        block.maxlength || undefined,
+        block.pattern || '',
+        block.placeholder || '',
+        block.min || undefined,
+        block.max || undefined,
+        block.step || undefined,
+        block.width || undefined,
+        block.height || undefined,
+        block.required || false,
+        block.disabled || false,
+        block.readonly || false,
+        block.tooltip || '',
+        block.central || false,
+        block.neutral || false,
+        block.incomplete || false,
+        block.hidden || false
+      );
     } else if ('text' in block && typeof block.text === 'string') {
-      return new TextBlock(block.id, block.style || '', block.font || '', block.text);
+      return new TextBlock(block.id, block.style || '', block.font || '', block.text, block.hidden || false);
     } else if ('def' in block && typeof block.def === 'string') {
-      return new InputBlock(block.id, block.style || '', block.def, block.placeholder || '', block.font || '');
+      return new InputBlock(block.id, block.style || '', block.def, block.placeholder || '', block.font || '', block.hidden || false);
     }  else {
       throw new Error('Unknown block type');
     }
@@ -73,6 +99,7 @@ export function downloadQuizSession(quizSession: any, filename: string = 'quizSe
     }
     return null;
   };
+
   
   export const getCookie = (name: string='quizHash'): string | null => {
     const nameEQ = name + "=";

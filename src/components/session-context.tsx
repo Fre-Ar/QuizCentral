@@ -20,6 +20,7 @@ export interface QuizSession {
   custom: QuizBlock[];
   settings: SessionSettings;
   nextId: number;
+  nextGroup: number;
 }
 
 export interface Group {

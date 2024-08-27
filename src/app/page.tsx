@@ -13,7 +13,6 @@ import { InputBlock } from '@/components/quiz_components/variables/input-comp';
 import { TextBlock } from '@/components/quiz_components/info/text-comp';
 import { useRouter } from 'next/navigation';
 import { QuizSession } from '@/components/session-context';
-import { QuizBlock } from '@/components/quiz_components/quiz-comp';
 import { parseQuizData } from '@/lib/utils';
 import { getCookie } from '@/lib/utils';
 
@@ -28,7 +27,7 @@ export default function Home() {
     const titleInput = new InputBlock("title", "", "", "Enter Quiz Title", "text-2xl font-bold");
     const placeholderInfo = new TextBlock("placeholder", "border border-dashed border-uni-black rounded p-4", "text-uni-grey text-nowrap text-center", "+ Add Blocks From The Left");
     const submitButton = new ButtonBlock("submit", "", "Submit");
-    const mainBlock = new ContainerBlock("main", "p-4 border-x border-uni-grey gap-y-4 min-w-96", -1, 1, [titleInput, placeholderInfo, submitButton]);
+    const mainBlock = new ContainerBlock("main", "space-y-4 p-4 border-x border-uni-grey min-w-[600px]", -1, 1, [titleInput, placeholderInfo, submitButton]);
 
     const quizSettings: QuizSettings = {
       title: `Quiz-${uniqueHash}`,
@@ -48,7 +47,8 @@ export default function Home() {
       groups: [],
       custom: [],
       settings: settings,
-      nextId: 0
+      nextId: 0,
+      nextGroup: 0
     };
     return newQuizSession;
   };

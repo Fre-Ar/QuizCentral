@@ -16,7 +16,7 @@ export default function Accordion({ title, children }: AccordionProps) {
     };
 
     return (
-      <div className="mb-2">
+      <div className="mb-2 min-w-fit">
         <button
           className={`w-full text-left bg-uni-black text-white font-bold ${isOpen ? 'rounded-t' : 'rounded'} flex items-center`}
           onClick={toggleAccordion}

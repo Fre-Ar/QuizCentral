@@ -22,8 +22,8 @@ export class InputBlock extends QuizBlock {
   placeholder: string
   font: string
   
-  constructor(id: string, style: string = "", def: string = "", placeholder: string = "", font: string = "") {
-    super(id, style);
+  constructor(id: string, style: string = "", def: string = "", placeholder: string = "", font: string = "", hidden:boolean=false) {
+    super(id, style, hidden);
     this.def = def;
     this.placeholder = placeholder;
     this.font = font;
@@ -44,7 +44,8 @@ export class InputBlock extends QuizBlock {
        prop === 'style' ? value : this.style,
        prop === 'def' ? value : this.def,
        prop === 'placeholder' ? value : this.placeholder,
-       prop === 'font' ? value : this.font);
+       prop === 'font' ? value : this.font,
+       prop === 'hidden' ? value : this.hidden);
   }
 }
 

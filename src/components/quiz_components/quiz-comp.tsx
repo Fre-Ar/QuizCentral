@@ -22,10 +22,10 @@ export abstract class QuizBlock {
   style: string;
   hidden: boolean;
 
-  constructor(id: string, style: string = "") {
+  constructor(id: string, style: string = "", hidden: boolean=false) {
     this.id = id;
     this.style = style;
-    this.hidden = false;
+    this.hidden = hidden;
   }
 
   asString() {

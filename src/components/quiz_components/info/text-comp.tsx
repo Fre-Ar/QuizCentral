@@ -19,8 +19,8 @@ export class TextBlock extends QuizBlock{
   font: string
   text: string
 
-  constructor(id: string, style: string = "", font: string = "", text: string="") {
-    super(id, style);
+  constructor(id: string, style: string = "", font: string = "", text: string="", hidden:boolean=false) {
+    super(id, style, hidden);
     this.font = font;
     this.text = text;
   }
@@ -39,7 +39,8 @@ export class TextBlock extends QuizBlock{
     return new TextBlock(this.id,
        prop === 'style' ? value : this.style,
        prop === 'font' ? value : this.font,
-       prop === 'text' ? value : this.text);
+       prop === 'text' ? value : this.text,
+       prop === 'hidden' ? value : this.hidden);
   }
 }
 

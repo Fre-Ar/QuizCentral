@@ -11,6 +11,7 @@ import { TextBlock } from './quiz_components/info/text-comp';
 import { ButtonBlock } from './quiz_components/variables/button-comp';
 import { QuizSession } from './session-context';
 import ToggleButton from './toggle-button';
+import { types, VarBlock } from './quiz_components/variables/var-comp';
 
 interface SidePanelProps{
     Position: 'left'|'right',
@@ -25,6 +26,11 @@ interface SidePanelProps{
 export default function SidePanel({ Position, Width, Tab, AddBlock, Selected, QuizSession, SetQuizSession }: SidePanelProps) {
     const [tab, setTab] = useState<'blocks' | 'settings'>(Tab);
     const [selectedBlock, setSelectedBlock] = useState<QuizBlock | null>(null);
+    const [isOn, setIsOn] = useState(false);
+
+    const handleToggle = (newIsOn: boolean) => {
+      setIsOn(newIsOn);
+    };
 
     // Update selectedBlock whenever Selected changes
     useEffect(() => {
@@ -77,6 +83,8 @@ export default function SidePanel({ Position, Width, Tab, AddBlock, Selected, Qu
       }
     };
 
+    const sharedStyle = 'p-2 rounded bg-uni-grey text-white';
+
     return (
         <Sidebar width={Width}>
           <div className="flex flex-row mb-4 items-center w-full">
@@ -120,6 +128,10 @@ export default function SidePanel({ Position, Width, Tab, AddBlock, Selected, Qu
                   <FaPlus size="2em" className="p-1" />
                 </SideButton>
 
+                <SideButton title='Variable Block' chosen={false} onClick={() => AddBlock(new VarBlock("", "text"))}>
+                  <FaPlus size="2em" className="p-1" />
+                </SideButton>
+
                 <SideButton title='Input Block' chosen={false} onClick={() => AddBlock(new InputBlock(""))}>
                   <FaPlus size="2em" className="p-1" />
                 </SideButton>
@@ -157,28 +169,28 @@ export default function SidePanel({ Position, Width, Tab, AddBlock, Selected, Qu
                       type="text"
                       value={selectedBlock.style}
                       onChange={(e) => handleInputChange('style', e.target.value)}
-                      className="p-2 rounded bg-uni-light text-white"
+                      className={sharedStyle}
                     />
                     <label className="text-white">Default Text:</label>
                     <input
                       type="text"
                       value={selectedBlock.def}
                       onChange={(e) => handleInputChange('def', e.target.value)}
-                      className="p-2 rounded bg-uni-light text-white"
+                      className={sharedStyle}
                     />
                     <label className="text-white">Placeholder:</label>
                     <input
                       type="text"
                       value={selectedBlock.placeholder}
                       onChange={(e) => handleInputChange('placeholder', e.target.value)}
-                      className="p-2 rounded bg-uni-light text-white"
+                      className={sharedStyle}
                     />
                     <label className="text-white">Font:</label>
                     <input
                       type="text"
                       value={selectedBlock.font}
                       onChange={(e) => handleInputChange('font', e.target.value)}
-                      className="p-2 rounded bg-uni-light text-white"
+                      className={sharedStyle}
                     />
                   </>
                 )}
@@ -189,21 +201,21 @@ export default function SidePanel({ Position, Width, Tab, AddBlock, Selected, Qu
                       type="text"
                       value={selectedBlock.text}
                       onChange={(e) => handleInputChange('text', e.target.value)}
-                      className="p-2 rounded bg-uni-light text-white"
+                      className={sharedStyle}
                     />
                     <label className="text-white">Style:</label>
                     <input
                       type="text"
                       value={selectedBlock.style}
                       onChange={(e) => handleInputChange('style', e.target.value)}
-                      className="p-2 rounded bg-uni-light text-white"
+                      className={sharedStyle}
                     />
                     <label className="text-white">Font:</label>
                     <input
                       type="text"
                       value={selectedBlock.font}
                       onChange={(e) => handleInputChange('font', e.target.value)}
-                      className="p-2 rounded bg-uni-light text-white"
+                      className={sharedStyle}
                     />
                   </>
                 )}
@@ -214,14 +226,14 @@ export default function SidePanel({ Position, Width, Tab, AddBlock, Selected, Qu
                       type="text"
                       value={selectedBlock.style}
                       onChange={(e) => handleInputChange('style', e.target.value)}
-                      className="p-2 rounded bg-uni-light text-white"
+                      className={sharedStyle}
                     />
                     <label className="text-white">Text:</label>
                     <input
                       type="text"
                       value={selectedBlock.text}
                       onChange={(e) => handleInputChange('text', e.target.value)}
-                      className="p-2 rounded bg-uni-light text-white"
+                      className={sharedStyle}
                     />
                   </>
                 )}
@@ -232,22 +244,207 @@ export default function SidePanel({ Position, Width, Tab, AddBlock, Selected, Qu
                       type="text"
                       value={selectedBlock.style}
                       onChange={(e) => handleInputChange('style', e.target.value)}
-                      className="p-2 rounded bg-uni-light text-white"
+                      className={sharedStyle}
                     />
                     <label className="text-white">Rows:</label>
                     <input
                       type="number"
                       value={selectedBlock.rows}
                       onChange={(e) => handleInputChange('rows', e.target.value)}
-                      className="p-2 rounded bg-uni-light text-white"
+                      className={sharedStyle}
                     />
                     <label className="text-white">Columns:</label>
                     <input
                       type="number"
                       value={selectedBlock.columns}
                       onChange={(e) => handleInputChange('columns', e.target.value)}
-                      className="p-2 rounded bg-uni-light text-white"
+                      className={sharedStyle}
                     />
+                  </>
+                )}
+                {selectedBlock instanceof VarBlock && (
+                  <>
+                    {/* Common Attributes */}
+                    <label className="text-white">Type:</label>
+                    <select
+                      value={selectedBlock.type}
+                      onChange={(e) => handleInputChange('type', e.target.value)}
+                      className={sharedStyle}
+                    >
+                      {types.map((type) => (
+                        <option key={type} value={type}>{type}</option>
+                      ))}
+                    </select>
+
+                    <label className="text-white">Value:</label>
+                    <input
+                      type="text"
+                      value={typeof selectedBlock.value === 'boolean' ? String(selectedBlock.value) : selectedBlock.value}
+                      onChange={(e) => handleInputChange('value', e.target.value)}
+                      className={sharedStyle}
+                    />
+
+                    <label className="text-white">Name:</label>
+                    <input
+                      type="text"
+                      value={selectedBlock.name}
+                      onChange={(e) => handleInputChange('name', e.target.value)}
+                      className={sharedStyle}
+                    />
+
+                    <label className="text-white">Style:</label>
+                    <input
+                      type="text"
+                      value={selectedBlock.style}
+                      onChange={(e) => handleInputChange('style', e.target.value)}
+                      className={sharedStyle}
+                    />
+
+                    {/* Specific Attributes */}
+                    {selectedBlock.type === 'select' && !(selectedBlock.options === undefined) && (
+                      <>
+                        <label className="text-white">Options:</label>
+                        <textarea
+                          value={selectedBlock.options.join('\n')}
+                          onChange={(e) => handleInputChange('options', e.target.value.split('\n'))}
+                          className={sharedStyle}
+                        />
+                      </>
+                    )}
+
+                    {(selectedBlock.type === 'text') && (
+                      <>
+                        <label className="text-white">Max Length:</label>
+                        <input
+                          type="number"
+                          value={selectedBlock.maxlength}
+                          onChange={(e) => handleInputChange('maxlength', e.target.value)}
+                          className={sharedStyle}
+                        />
+                        <label className="text-white">Pattern:</label>
+                        <input
+                          type="text"
+                          value={selectedBlock.pattern}
+                          onChange={(e) => handleInputChange('pattern', e.target.value)}
+                          className={sharedStyle}
+                        />
+                        <label className="text-white">Placeholder:</label>
+                        <input
+                          type="text"
+                          value={selectedBlock.placeholder}
+                          onChange={(e) => handleInputChange('placeholder', e.target.value)}
+                          className={sharedStyle}
+                        />
+                      </>
+                    )}
+
+                    {['number', 'range', 'date', 'datetime-local', 'time', 'week', 'month'].includes(selectedBlock.type) && (
+                      <>
+                        <label className="text-white">Min:</label>
+                        <input
+                          type="number"
+                          value={selectedBlock.min}
+                          onChange={(e) => handleInputChange('min', e.target.value)}
+                          className={sharedStyle}
+                        />
+                        <label className="text-white">Max:</label>
+                        <input
+                          type="number"
+                          value={selectedBlock.max}
+                          onChange={(e) => handleInputChange('max', e.target.value)}
+                          className={sharedStyle}
+                        />
+                        <label className="text-white">Step:</label>
+                        <input
+                          type="number"
+                          value={selectedBlock.step}
+                          onChange={(e) => handleInputChange('step', e.target.value)}
+                          className={sharedStyle}
+                        />
+                      </>
+                    )}
+
+                    {['image', 'button', 'submit', 'reset'].includes(selectedBlock.type) && (
+                      <>
+                        <label className="text-white">Width:</label>
+                        <input
+                          type="number"
+                          value={selectedBlock.width}
+                          onChange={(e) => handleInputChange('width', e.target.value)}
+                          className={sharedStyle}
+                        />
+                        <label className="text-white">Height:</label>
+                        <input
+                          type="number"
+                          value={selectedBlock.height}
+                          onChange={(e) => handleInputChange('height', e.target.value)}
+                          className={sharedStyle}
+                        />
+                      </>
+                    )}
+
+                    {/* Boolean Attributes */}
+                    <div className="flex items-center">
+                      <input
+                        type="checkbox"
+                        checked={selectedBlock.required}
+                        onChange={(e) => handleInputChange('required', e.target.checked)}
+                        className={`mr-2 ${sharedStyle}`}
+                      />
+                      <label className="text-white">Required</label>
+                    </div>
+                    <div className="flex items-center">
+                      <input
+                        type="checkbox"
+                        checked={selectedBlock.disabled}
+                        onChange={(e) => handleInputChange('disabled', e.target.checked)}
+                        className={`mr-2 ${sharedStyle}`}
+                      />
+                      <label className="text-white">Disabled</label>
+                    </div>
+                    <div className="flex items-center">
+                      <input
+                        type="checkbox"
+                        checked={selectedBlock.readonly}
+                        onChange={(e) => handleInputChange('readonly', e.target.checked)}
+                        className={`mr-2 ${sharedStyle}`}
+                      />
+                      <label className="text-white">Read Only</label>
+                    </div>
+
+                    {/* Tooltip */}
+                    <label className="text-white">Tooltip:</label>
+                    <input
+                      type="text"
+                      value={selectedBlock.tooltip}
+                      onChange={(e) => handleInputChange('tooltip', e.target.value)}
+                      className={sharedStyle}
+                    />
+
+                    {/* Central, Neutral, Incomplete */}
+                    <label className="text-white">Central:</label>
+                    <input
+                      type="text"
+                      value={selectedBlock.central === false ? '' : selectedBlock.central}
+                      onChange={(e) => handleInputChange('central', e.target.value)}
+                      className={sharedStyle}
+                    />
+                    <label className="text-white">Neutral:</label>
+                    <input
+                      type="text"
+                      value={selectedBlock.neutral === false ? '' : selectedBlock.neutral}
+                      onChange={(e) => handleInputChange('neutral', e.target.value)}
+                      className={sharedStyle}
+                    />
+                    <div className="flex items-center">
+                      <input
+                        type="checkbox"
+                        checked={selectedBlock.incomplete}
+                        onChange={(e) => handleInputChange('incomplete', e.target.checked)}
+                        className={`mr-2 ${sharedStyle}`}
+                      />
+                      <label className="text-white">Incomplete</label>
+                    </div>
                   </>
                 )}
               </div>
@@ -255,11 +452,21 @@ export default function SidePanel({ Position, Width, Tab, AddBlock, Selected, Qu
             <Accordion title="Advanced">
               <div className="flex flex-col">
                 <div className="flex-col justify-left items-center gap-y-4">
-                  {selectedBlock && (<>
-                    <h3 className='font-bold'>Hide</h3>
-                    <div className=""><ToggleButton initialOn={selectedBlock?.hidden} black={true} onToggle={() => handleInputChange('hidden', !selectedBlock?.hidden)}/></div>   
-                    <p className='italic'>Hide from non-editors</p>
-                  </>)}
+                  {selectedBlock && (
+                    <div className='space-y-4'>
+                      <div className='min-w-fit'>
+                        <h3 className='font-bold'>Unique ID</h3>
+                        <p className='italic'>Unique IDs can be used to refer to a specific block.</p>
+                        <div className="border-uni-grey border py-4 px-2 w-full"><p className='bg-uni-grey rounded px-2 py-1'>{selectedBlock.id}</p></div>   
+                      </div>
+
+                      <div>
+                        <h3 className='font-bold'>Hide</h3>
+                        <div className=""><ToggleButton isOn={selectedBlock.hidden} black={true} onToggle={(on: boolean) => {handleToggle; handleInputChange('hidden', !selectedBlock?.hidden);}}/></div>   
+                        <p className='italic'>Hide from non-editors</p>
+                      </div>
+                      
+                    </div>)}
 
                 </div>
               </div>

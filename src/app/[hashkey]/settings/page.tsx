@@ -7,19 +7,15 @@ import { useRouter } from 'next/navigation';
 import Header from '@/components/header';
 import NavMenu from '@/components/nav-menu';
 import DragHandle from '@/components/drag-handle';
-import Accordion from '@/components/accordion';
 import Sidebar from '@/components/sidebar';
 import SideButton from '@/components/side-button';
 import { parseQuizData, downloadQuizSession } from '@/lib/utils';
 
 import { FaCog, FaCodeBranch, FaCss3Alt, FaFolder, FaDatabase } from "react-icons/fa";
 
-import InputComponent, {InputBlock} from '@/components/quiz_components/variables/input-comp';
-import TextComponent, {TextBlock} from '@/components/quiz_components/info/text-comp';
-import { ButtonBlock } from '@/components/quiz_components/variables/button-comp';
-import { ContainerBlock } from '@/components/quiz_components/container-comp';
+
 import { QuizSession } from '@/components/session-context';
-import { QuizBlock } from '@/components/quiz_components/quiz-comp';
+
 
 
 const MIN_SIDEBAR_WIDTH = 0;

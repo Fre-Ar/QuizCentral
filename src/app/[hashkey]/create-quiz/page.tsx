@@ -9,10 +9,7 @@ import NavMenu from '@/components/nav-menu';
 import DragHandle from '@/components/drag-handle';
 import SidePanel from '@/components/side-panel';
 
-import ContainerComponent, { ContainerBlock } from '@/components/quiz_components/container-comp';
-import InputComponent, { InputBlock} from '@/components/quiz_components/variables/input-comp';
-import ButtonComponent, { ButtonBlock } from '@/components/quiz_components/variables/button-comp';
-import TextComponent, { TextBlock } from '@/components/quiz_components/info/text-comp';
+import { ContainerBlock } from '@/components/quiz_components/container-comp';
 import { QuizBlock } from '@/components/quiz_components/quiz-comp';
 
 

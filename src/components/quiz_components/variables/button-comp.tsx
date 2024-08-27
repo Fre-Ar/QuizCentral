@@ -14,8 +14,8 @@ interface ButtonDisplayProps extends QuizDisplayProps {
 export class ButtonBlock extends QuizBlock{
   text: string
 
-   constructor(id: string, style: string = "", text: string = "") {
-    super(id, style);
+   constructor(id: string, style: string = "", text: string = "", hidden:boolean=false) {
+    super(id, style, hidden);
     this.text = text;
   }
 
@@ -32,7 +32,8 @@ export class ButtonBlock extends QuizBlock{
   changeProps(prop: string, value: any): ButtonBlock {
     return new ButtonBlock(this.id,
        prop === 'style' ? value : this.style,
-       prop === 'text' ? value : this.text);
+       prop === 'text' ? value : this.text,
+       prop === 'hidden' ? value : this.hidden);
   }
 
 }

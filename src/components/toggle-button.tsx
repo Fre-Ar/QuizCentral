@@ -1,20 +1,15 @@
 import React, { useState } from 'react';
 
 interface ToggleButtonProps {
-  initialOn?: boolean;
-  onToggle?: (on: boolean) => void;
+  isOn: boolean;
+  onToggle: (on: boolean) => void;
   black?: boolean;
 }
 
-export default function ToggleButton({ initialOn = false, black=false, onToggle }: ToggleButtonProps) {
-  const [isOn, setIsOn] = useState(initialOn);
-
+export default function ToggleButton({ isOn = false, black=false, onToggle }: ToggleButtonProps) {
+  
   const handleToggle = () => {
-    const newIsOn = !isOn;
-    setIsOn(newIsOn);
-    if (onToggle) {
-      onToggle(newIsOn);
-    }
+    onToggle(!isOn);
   };
 
   return (

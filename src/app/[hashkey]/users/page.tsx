@@ -24,17 +24,25 @@ export default function Page()  {
   const [rightSidebarWidth, setRightSidebarWidth] = useState(DEFAULT_SIDEBAR_WIDTH);
   const [dragging, setDragging] = useState<string | null>(null);
 
-  const [nextid, setNextId] = useState<number>(0);
+  const [nextid, setNextId] = useState<number>(quizSession?.nextGroup || 0);
   const [selectedGroup, setSelectedGroup] = useState<string | null>(null);
   const [selectedEmail, setSelectedEmail] = useState<{ groupId: string; emailIndex: number } | null>(null);
   
   const containerRef = useRef<HTMLDivElement>(null);
 
+  const updateNext = () => {
+    setNextId(nextid + 1);
+    if(quizSession){
+      setQuizSession({ ...quizSession, nextGroup: nextid+1});
+    }
+    
+  }
+
   const handleAddGroup = () => {
 
     if(quizSession){
 
-      setNextId(nextid+1)
+      updateNext()
 
       const settings: GroupSettings = {
         submitResponse: false,
@@ -100,6 +108,10 @@ export default function Page()  {
       );
 
       setQuizSession({ ...quizSession, groups: updatedGroups });
+
+      if (selectedEmail?.groupId === groupId &&  selectedEmail?.emailIndex === emailIndex) {
+        setSelectedEmail(null);
+      }
     }
   };
 
@@ -147,11 +159,11 @@ export default function Page()  {
 
   const handleClickOutside = (event: MouseEvent) => {
 
-
-    if ((containerRef.current && containerRef.current.contains(event.target as Node))) {
-      setSelectedGroup(null);
-      setSelectedEmail(null);
-    }
+    if(containerRef.current && containerRef.current.contains(event.target as Node))
+      if(!containerRef.current.isEqualNode(event.target as Node)){
+        setSelectedGroup(null);
+        setSelectedEmail(null);
+      }
   };
 
   const handlePaste = async (e: ClipboardEvent) => {
@@ -215,13 +227,15 @@ export default function Page()  {
   useEffect(() => {
     document.addEventListener('mousemove', handleMouseMove);
     document.addEventListener('mouseup', handleMouseUp);
-    document.addEventListener('click', handleClickOutside, true);
     document.addEventListener('paste', handlePaste); 
+    document.addEventListener('click', handleClickOutside, true);
+    
     return () => {
       document.removeEventListener('mousemove', handleMouseMove);
       document.removeEventListener('mouseup', handleMouseUp);
-      document.removeEventListener('click', handleClickOutside, true);
       document.removeEventListener('paste', handlePaste);
+      document.removeEventListener('click', handleClickOutside, true);
+      
     };
   }, [dragging, selectedGroup, quizSession]);
 
