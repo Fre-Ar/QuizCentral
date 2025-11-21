@@ -5,6 +5,7 @@ import { ButtonBlock } from "@/components/quiz_components/variables/button-comp"
 import { InputBlock } from "@/components/quiz_components/variables/input-comp";
 import { QuizSession, Group } from "@/components/session-context";
 import { types, VarBlock } from "@/components/quiz_components/variables/var-comp";
+import { v4 as uuidv4 } from 'uuid';
 
 /**
  * Serialize a quiz session object to JSON and trigger a browser download of the resulting file.
@@ -305,3 +306,37 @@ export const promptFileUpload = (setQuizSession: (data: QuizSession | null) => v
   input.onchange = (e) => handleFileUpload(e as unknown as React.ChangeEvent<HTMLInputElement>, setQuizSession);
   input.click();
 };
+
+
+
+  // Function to generate a unique ID of less than 16 characters
+export const generateAccessId = () => {
+    return uuidv4().replaceAll("-", "").slice(0, 16);
+  };
+
+export const sendEmailToUser = async (email: string, hashKey: string, accessId: string) => {
+    try {
+      const response = await fetch('/api/email', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          to: email,
+          subject: `Invitation to Access Quiz - ${hashKey}`,
+          text: `You've been invited to access the quiz. Use the following link: ${process.env.NEXT_PUBLIC_BASE_URL}/access/${hashKey}/${accessId}`,
+          html: `<p>You've been invited to access the quiz. Use the following link:</p>
+                 <a href="${process.env.NEXT_PUBLIC_BASE_URL}/access/${hashKey}/${accessId}">${process.env.NEXT_PUBLIC_BASE_URL}/access/${hashKey}/${accessId}</a>`,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to send email');
+      }
+
+      const data = await response.json();
+      console.log(data.message);
+    } catch (error) {
+      console.error('Error sending email:', error);
+    }
+  };

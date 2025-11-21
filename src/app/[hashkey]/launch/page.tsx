@@ -1,95 +1,20 @@
 'use client';
 
-import React, { useState, useEffect, useRef} from 'react';
-import { useRouter } from 'next/navigation';
-
-
-import { useQuiz, Group, QuizSession } from '@/components/session-context';
-import { useQuizSession } from '@/hooks/quiz';
-import { saveQuizToSupabase } from '@/lib/utils';
+import React from 'react';
+import { FaSpinner, FaEnvelope, FaRocket } from "react-icons/fa";
 
 import Header from '@/components/header';
 import NavMenu from '@/components/nav-menu';
-import { FaSpinner, FaEnvelope, FaRocket } from "react-icons/fa";
-import { v4 as uuidv4 } from 'uuid';
+
+import { useQuizSession } from '@/hooks/quiz';
+import { getGroupAccess } from '@/hooks/groups';
 
 
 
 export default function Page()  {
   const { quizSession, setQuizSession }  = useQuizSession(); 
-
-  const [expandedGroups, setExpandedGroups] = useState<string[]>([]);
-
-
-  // Function to generate a unique ID of less than 16 characters
-  const generateAccessId = () => {
-    return uuidv4().replaceAll("-", "").slice(0, 16);
-  };
-
-  const sendEmailToUser = async (email: string, hashKey: string, accessId: string) => {
-    try {
-      const response = await fetch('/api/email', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          to: email,
-          subject: `Invitation to Access Quiz - ${hashKey}`,
-          text: `You've been invited to access the quiz. Use the following link: ${process.env.NEXT_PUBLIC_BASE_URL}/access/${hashKey}/${accessId}`,
-          html: `<p>You've been invited to access the quiz. Use the following link:</p>
-                 <a href="${process.env.NEXT_PUBLIC_BASE_URL}/access/${hashKey}/${accessId}">${process.env.NEXT_PUBLIC_BASE_URL}/access/${hashKey}/${accessId}</a>`,
-        }),
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to send email');
-      }
-
-      const data = await response.json();
-      console.log(data.message);
-    } catch (error) {
-      console.error('Error sending email:', error);
-    }
-  };
-
-  const handleToggleGroup = async (groupId: string) => {
-    const updatedGroups = quizSession?.groups.map(group => {
-      if (group.id === groupId) {
-        const updatedEmails = group.emails.map(user => {
-          if (!user.accessId) {
-            return { ...user, accessId: generateAccessId() };
-          }
-          return user;
-        });
-        return { ...group, emails: updatedEmails };
-      }
-      return group;
-    });
+  const { expandedGroups, openQuizToGroup } = getGroupAccess(quizSession, setQuizSession);
   
-    if (quizSession) {
-      setQuizSession({ ...quizSession, groups: updatedGroups as Group[] });
-    }
-    if (quizSession) {
-  
-      const group = updatedGroups?.find(group => group.id === groupId);
-      if (group) {
-        await saveQuizToSupabase(quizSession, group);
-
-        for (const user of group.emails) {
-          if (user.email !== 'example@gmail.com') {
-            await sendEmailToUser(user.email, quizSession.hash, user.accessId || '');
-          }
-        }
-      }
-    }
-  
-    if (expandedGroups.includes(groupId)) {
-      setExpandedGroups(expandedGroups.filter(id => id !== groupId));
-    } else {
-      setExpandedGroups([...expandedGroups, groupId]);
-    }
-  };
 
   return (
     <div className="min-h-screen max-h-screen flex flex-col">
@@ -157,7 +82,7 @@ export default function Page()  {
                     style={{ top: `calc((100% - 2em)/2)`}}> 
                   <button 
                     className={`bg-${expandedGroups.includes(group.id) ? 'uni-red' : 'uni-blue'} text-white rounded p-1 ml-2`}  
-                    onClick={() => handleToggleGroup(group.id)}>
+                    onClick={() => openQuizToGroup(group.id)}>
                     
                     {expandedGroups.includes(group.id) ? <FaSpinner className="rounded p-1" size="2em"/> :
                                                          <FaRocket className="rounded p-1" size="2em"/>}

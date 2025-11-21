@@ -1,6 +1,7 @@
 import { QuizSession } from '@/components/session-context';
 import { Group, GroupSettings, User } from '@/components/session-context';
 import { useState, useRef } from 'react';
+import { generateAccessId, saveQuizToSupabase, sendEmailToUser } from '@/lib/utils'
 
 const updateNext = (quizSession: QuizSession | null, setQuizSession: (session: QuizSession) => void, nextId: number, setNextId: (id: number) => void) => {
     setNextId(nextId + 1);
@@ -173,4 +174,50 @@ export function getGroupHandlers(quizSession: QuizSession | null, setQuizSession
     };
 
     return {addGroup, addEmail, editEmail, deleteEmail, editGroup, deleteGroup, selectGroup, selectEmail, changePermission, containerRef, selectedEmail, selectedGroup}
+};
+
+
+export function getGroupAccess(quizSession: QuizSession | null, setQuizSession: (session: QuizSession) => void) {
+    const [expandedGroups, setExpandedGroups] = useState<string[]>([]);
+
+    const openQuizToGroup = async (groupId: string) => {
+        const updatedGroups = quizSession?.groups.map(group => {
+          if (group.id === groupId) {
+            const updatedEmails = group.emails.map(user => {
+              if (!user.accessId) {
+                return { ...user, accessId: generateAccessId() };
+              }
+              return user;
+            });
+            return { ...group, emails: updatedEmails };
+          }
+          return group;
+        });
+      
+        if (quizSession) {
+          setQuizSession({ ...quizSession, groups: updatedGroups as Group[] });
+        }
+        if (quizSession) {
+      
+          const group = updatedGroups?.find(group => group.id === groupId);
+          if (group) {
+            await saveQuizToSupabase(quizSession, group);
+    
+            for (const user of group.emails) {
+              if (user.email !== 'example@gmail.com') {
+                await sendEmailToUser(user.email, quizSession.hash, user.accessId || '');
+              }
+            }
+          }
+        }
+      
+        if (expandedGroups.includes(groupId)) {
+          setExpandedGroups(expandedGroups.filter(id => id !== groupId));
+        } else {
+          setExpandedGroups([...expandedGroups, groupId]);
+        }
+      };
+
+    
+    return { expandedGroups, openQuizToGroup}
 };
