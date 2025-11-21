@@ -273,3 +273,35 @@ export const saveQuizToSupabase = async (quizSession: QuizSession, launchedGroup
     console.error('Error saving launched group and users:', error);
   }
 };
+
+// Function to handle the file upload and parse the JSON
+ const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>, setQuizSession: (data: QuizSession | null) => void) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        try {
+          const json = JSON.parse(event.target?.result as string);
+          const parsedQuizSession = parseQuizData(json);
+          if (parsedQuizSession) {
+            setQuizSession(parsedQuizSession); // Set the quiz session if valid
+            alert('Quiz session successfully loaded.');
+          } else {
+            alert('Invalid quiz session format.');
+          }
+        } catch (error) {
+          alert('Error reading JSON file.');
+        }
+      };
+      reader.readAsText(file);
+    }
+  };
+
+// Function to prompt file upload
+export const promptFileUpload = (setQuizSession: (data: QuizSession | null) => void) => {
+  const input = document.createElement('input');
+  input.type = 'file';
+  input.accept = '.json';
+  input.onchange = (e) => handleFileUpload(e as unknown as React.ChangeEvent<HTMLInputElement>, setQuizSession);
+  input.click();
+};

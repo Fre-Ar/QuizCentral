@@ -1,8 +1,6 @@
 'use client';
 
 import React, { useState, useEffect, useRef} from 'react';
-import { useQuiz } from '@/components/session-context';
-import { useRouter } from 'next/navigation';
 
 import Header from '@/components/header';
 import NavMenu from '@/components/nav-menu';
@@ -13,22 +11,17 @@ import { parseQuizData, downloadQuizSession } from '@/lib/utils';
 
 import { FaCog, FaCodeBranch, FaCss3Alt, FaFolder, FaDatabase } from "react-icons/fa";
 
-
+import { promptFileUpload } from '@/lib/utils';
 import { QuizSession } from '@/components/session-context';
+import { useDragging } from '@/hooks/resizing';
+import { useQuizSession } from '@/hooks/quiz';
 
-
-
-const MIN_SIDEBAR_WIDTH = 0;
-const DEFAULT_SIDEBAR_WIDTH = 20;
-const MAX_SIDEBAR_WIDTH = 100;
 
 export default function Page() {
-  const { quizSession, setQuizSession } = useQuiz();
-  const router = useRouter()
+  const  {quizSession, setQuizSession} = useQuizSession();
+  const { leftSidebarWidth,  rightSidebarWidth,  selectedDivId, mainRef, handleMouseDown } = useDragging();
 
   const [leftTab, setLeftTab] = useState<'settings' | 'conditions' | 'styling'>('settings');
-  const [leftSidebarWidth, setLeftSidebarWidth] = useState(DEFAULT_SIDEBAR_WIDTH);
-  const [dragging, setDragging] = useState<string | null>(null);
 
   const saveQuizToSupabase = async (quizSession: QuizSession) => {
     try {
@@ -65,82 +58,10 @@ export default function Page() {
   const handleBlocksPerPageChange = (e: React.ChangeEvent<HTMLInputElement>) =>
     quizSession && setQuizSession({ ...quizSession, settings: { ...quizSession.settings, quizSettings: { ...quizSession.settings.quizSettings, blocksPerPage: e.target.valueAsNumber } } });
 
-
-
-
-
-  // Function to handle the file upload and parse the JSON
-  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onload = (event) => {
-        try {
-          const json = JSON.parse(event.target?.result as string);
-          const parsedQuizSession = parseQuizData(json);
-          if (parsedQuizSession) {
-            setQuizSession(parsedQuizSession); // Set the quiz session if valid
-            alert('Quiz session successfully loaded.');
-          } else {
-            alert('Invalid quiz session format.');
-          }
-        } catch (error) {
-          alert('Error reading JSON file.');
-        }
-      };
-      reader.readAsText(file);
-    }
-  };
-
-  // Function to prompt file upload
-  const promptFileUpload = () => {
-    const input = document.createElement('input');
-    input.type = 'file';
-    input.accept = '.json';
-    input.onchange = (e) => handleFileUpload(e as unknown as React.ChangeEvent<HTMLInputElement>);
-    input.click();
+  const handlePromptFileUpload = () => {
+    promptFileUpload(setQuizSession);
   };
   
-
-  const handleMouseDown = (sidebar: string) => {
-    setDragging(sidebar);
-  };
-
-  const handleMouseUp = () => {
-    setDragging(null);
-  };
-
-  const handleMouseMove = (e: MouseEvent) => {
-    if (!dragging) return;
-
-    const totalWidth = window.innerWidth;
-
-    if (dragging === 'left') {
-      const newWidth = (e.clientX / totalWidth) * 100;
-      if (newWidth >= MIN_SIDEBAR_WIDTH && newWidth <= MAX_SIDEBAR_WIDTH) {
-        setLeftSidebarWidth(newWidth);
-      }
-    }
-  };
-
-
-  useEffect(() => {
-    document.addEventListener('mousemove', handleMouseMove);
-    document.addEventListener('mouseup', handleMouseUp);
-
-    return () => {
-      document.removeEventListener('mousemove', handleMouseMove);
-      document.removeEventListener('mouseup', handleMouseUp);
-    };
-  }, [dragging]);
-
-  useEffect(() => {
-    // If quizData doesn't exist, redirect to the homepage
-    if (!quizSession) {
-      router.push('/');
-    }
-  }, [quizSession, router]);
-
   return (
     <div className="min-h-screen max-h-screen flex flex-col">
       <Header />
@@ -158,7 +79,7 @@ export default function Page() {
         <SideButton title='Global Styling' chosen={leftTab==='styling'} onClick={() => setLeftTab('styling')}>
             <FaCss3Alt size="2em" className="p-1" />
         </SideButton>
-        <SideButton title='Import Quiz Session' chosen={false}  onClick={promptFileUpload}>
+        <SideButton title='Import Quiz Session' chosen={false}  onClick={handlePromptFileUpload}>
             <FaFolder size="2em" className="p-1" />
         </SideButton>
         <SideButton title='Commit Changes to Database' chosen={false}  onClick={() => {if(quizSession) saveQuizToSupabase(quizSession)}}>
