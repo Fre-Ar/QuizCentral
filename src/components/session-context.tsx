@@ -76,6 +76,34 @@ export interface Action {
 
 const QuizContext = createContext<QuizContextType | undefined>(undefined);
 
+/**
+ * QuizProvider component
+ *
+ * Provides quiz session state to descendant components via QuizContext.
+ * Internally, it manages a piece of state "quizSession" (initially null) and
+ * its updater "setQuizSession" using React's useState, and supplies both through
+ * the QuizContext.Provider value.
+ *
+ * @remarks
+ * - The context value shape is expected to be:
+ *   { quizSession: QuizSession | null; setQuizSession: React.Dispatch<React.SetStateAction<QuizSession | null>> }
+ * - Intended to wrap the part of the component tree that needs access to the current
+ *   quiz session and the ability to update it.
+ *
+ * @param props.children - The React node(s) that will have access to the quiz context.
+ *
+ * @returns A JSX element that renders children within the QuizContext.Provider.
+ *
+ * @example
+ * // Wrap your application (or a subtree) so descendants can read/update the quiz session
+ * <QuizProvider>
+ *   <App />
+ * </QuizProvider>
+ *
+ * @example
+ * // Consume the context in a descendant component
+ * const { quizSession, setQuizSession } = useContext(QuizContext);
+ */
 export const QuizProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [quizSession, setQuizSession] = useState<QuizSession | null>(null);
 
@@ -86,6 +114,22 @@ export const QuizProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   );
 };
 
+/**
+ * Custom hook that returns the current value of the QuizContext.
+ *
+ * This hook ensures it is called within a QuizProvider. If no provider is found
+ * in the React component tree, it throws an error to help catch incorrect usage.
+ *
+ * @returns The value exposed by QuizProvider (quiz state and actions).
+ *
+ * @throws {Error} If the hook is used outside of a QuizProvider.
+ *
+ * @example
+ * // inside a component rendered within <QuizProvider>
+ * const { questions, currentQuestionIndex, submitAnswer } = useQuiz();
+ *
+ * @public
+ */
 export const useQuiz = () => {
   const context = useContext(QuizContext);
   if (!context) {
