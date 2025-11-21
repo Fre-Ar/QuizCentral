@@ -6,114 +6,34 @@ import Link from 'next/link';
 import Header from '../components/header';
 import { useQuiz } from '@/components/session-context';
 import { useRouter } from 'next/navigation';
-import { parseQuizData } from '@/lib/utils';
-import { getCookie } from '@/lib/utils';
-import { createQuiz } from '@/handlers/quiz-handler';
+import { createDefaultQuiz, loadQuiz } from '@/handlers/quiz-handler';
 
 export default function Home() {
 
   const { setQuizSession } = useQuiz();
   const router = useRouter()
 
-  /**
-   * Creates a new quiz session, updates the component state with the new session,
-   * and navigates the user to the quiz creation page for that session.
-   *
-   * This function performs three side effects in sequence:
-   * 1. Calls `createQuiz()` to create a new quiz session object (expected to include a `hash`).
-   * 2. Calls `setQuizSession(...)` to store the newly created session in component state.
-   * 3. Calls `router.push(...)` to navigate to the route `/{hash}/create-quiz` so the user can
-   *    continue creating the quiz.
-   *
-   * @remarks
-   * The function does not accept parameters and returns nothing. It relies on the external
-   * `createQuiz`, `setQuizSession`, and `router` values being available in the surrounding scope.
-   * Any errors thrown by those utilities (e.g., failed creation or navigation) will propagate
-   * to the caller.
-   *
-   * @returns void
-   *
-   * @example
-   * // When the user clicks a "New Quiz" button:
-   * handleCreateQuiz();
-   *
-   * @throws {Error} If `createQuiz()` or `router.push()` fails, the error will bubble up.
-   */
+ /**
+ * Wrapper that creates a new quiz session, sets it into page state, and navigates.
+ *
+ * This centralizes the page-side creation logic in the handler module so callers
+ * (like `page.tsx`) only need to pass the callbacks required to update state and
+ * navigate.
+ */
   const handleCreateQuiz = () => {
-    const newQuizSession = createQuiz();
-    setQuizSession(newQuizSession);
-    router.push(`/${newQuizSession.hash}/create-quiz`);
+    createDefaultQuiz(setQuizSession, (path: string) => router.push(path));
   };
 
+ 
   /**
    * Attempts to load an existing quiz session from a cookie and, if confirmed by the user,
    * fetches the quiz data from the server and restores the quiz session in the UI.
    *
-   * Behavior:
-   * - Reads the cookie named "quizHash" via getCookie.
-   * - If a quiz hash exists:
-   *   - Prompts the user with window.confirm to decide whether to load the existing quiz.
-   *   - If the user confirms:
-   *     - Sends a POST request to '/api/quiz/load-quiz' with JSON body { hashKey: <cookie value> }.
-   *     - Awaits and parses the JSON response. If the response contains an error, shows an alert
-   *       with the error message and exits early.
-   *     - Otherwise, parses the returned quiz data using parseQuizData, sets the quiz session
-   *       via setQuizSession, and navigates to `/<hash>/create-quiz` using router.push.
-   *   - If the user declines, delegates to handleCreateQuiz to start a new quiz.
-   * - If no quiz hash cookie is present:
-   *   - Alerts the user that no existing quiz was found and starts a new quiz by calling handleCreateQuiz.
-   *
-   * Side effects:
-   * - Shows modal/alert dialogs (window.confirm and alert).
-   * - Performs a network request (fetch).
-   * - Calls parseQuizData and setQuizSession (mutates component/application state).
-   * - Triggers navigation via router.push.
-   * - May call handleCreateQuiz to create a new quiz session.
-   *
-   * Error handling notes:
-   * - Network, parsing, or other runtime errors thrown during fetch, response.json(),
-   *   parseQuizData(), or router.push() are not handled inside this function and will
-   *   propagate to the caller unless wrapped in try/catch.
-   * - The function explicitly checks for an error field in the server response and alerts it.
-   *
-   * @async
-   * @returns Promise<void> - resolves when the load-or-create flow completes (or exits early on error).
-   * @throws Any runtime errors from fetch, JSON parsing, parseQuizData, setQuizSession, or router.push.
-   * @see getCookie, parseQuizData, setQuizSession, handleCreateQuiz, router.push
-   */
+   * This mirrors the logic previously in `page.tsx` but keeps the page thin by
+   * accepting the minimal callbacks required to update state and navigate.
+  */
   const handleLoadQuiz = async () => {
-    const existingHash = getCookie('quizHash');
-    let loadedQuizSession;
-
-    if (existingHash) {
-      const shouldLoad = window.confirm(`A quiz with id: ${existingHash} is already in progress. Do you want to load it?`);
-      if (shouldLoad) {
-        const response = await fetch('/api/quiz/load-quiz', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({hashKey: existingHash}),
-        });
-        const result = await response.json();
-
-        if (result.error) {
-          alert(result.error);
-          return;  // Exit if there's an error loading the quiz
-        } else {
-          loadedQuizSession = parseQuizData(result.quizData.quiz_data);
-        }
-
-        setQuizSession(loadedQuizSession);
-        router.push(`/${loadedQuizSession?.hash}/create-quiz`);
-      }
-      else {
-        handleCreateQuiz();
-      }
-    } else {
-      alert('No existing quiz found.');
-      handleCreateQuiz();
-    }
+    await loadQuiz(setQuizSession, (path: string) => router.push(path));
   };
   
 
