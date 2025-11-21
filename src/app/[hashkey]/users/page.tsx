@@ -1,8 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useRef} from 'react';
-import { useQuiz, Group, GroupSettings, User } from '@/components/session-context';
-import { useRouter } from 'next/navigation';
+import React, { useState} from 'react';
 
 import Header from '@/components/header';
 import NavMenu from '@/components/nav-menu';
