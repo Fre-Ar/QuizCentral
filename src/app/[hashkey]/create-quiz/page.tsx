@@ -8,162 +8,27 @@ import Header from '@/components/header';
 import NavMenu from '@/components/nav-menu';
 import DragHandle from '@/components/drag-handle';
 import SidePanel from '@/components/side-panel';
-
+import { deleteBlockHandler } from '@/handlers/quiz-handler';
 import { ContainerBlock } from '@/components/quiz_components/container-comp';
 import { QuizBlock } from '@/components/quiz_components/quiz-comp';
-
-
-
-const MIN_SIDEBAR_WIDTH = 0;
-const DEFAULT_SIDEBAR_WIDTH = 20;
-const MAX_SIDEBAR_WIDTH = 100;
+import { addBlockHandler } from '@/handlers/quiz-handler';
+import { useDragging } from '@/hooks/resizing';
+import { useQuizSession } from '@/hooks/quiz';
 
 export default function Page() {
-  const { quizSession, setQuizSession } = useQuiz();
-  const router = useRouter()
-
-  const [leftSidebarWidth, setLeftSidebarWidth] = useState(DEFAULT_SIDEBAR_WIDTH);
-  const [rightSidebarWidth, setRightSidebarWidth] = useState(DEFAULT_SIDEBAR_WIDTH);
-  const [dragging, setDragging] = useState<string | null>(null);
-
-  const [selectedDivId, setSelectedDivId] = useState<string | null>(null);
-  const mainRef = useRef<HTMLDivElement>(null);
-
+  
+  const { quizSession, setQuizSession }  = useQuizSession(); 
   const [nextId, setNextId] = useState<number>(quizSession?.nextId || 0);
-
-  const updateNext = () => {
-    setNextId(nextId + 1);
-    if(quizSession){
-      setQuizSession({ ...quizSession, nextId: nextId+1});
-    }
-    
-  }
-
-  const handleMouseDown = (sidebar: string) => {
-    setDragging(sidebar);
-  };
-
-  const handleMouseUp = () => {
-    setDragging(null);
-  };
-
-  const handleMouseMove = (e: MouseEvent) => {
-    if (!dragging) return;
-
-    const totalWidth = window.innerWidth;
-
-    if (dragging === 'left') {
-      const newWidth = (e.clientX / totalWidth) * 100;
-      if (newWidth >= MIN_SIDEBAR_WIDTH && newWidth <= MAX_SIDEBAR_WIDTH) {
-        setLeftSidebarWidth(newWidth);
-      }
-    }
-
-    if (dragging === 'right') {
-      const newWidth = ((totalWidth - e.clientX) / totalWidth) * 100;
-      if (newWidth >= MIN_SIDEBAR_WIDTH && newWidth <= MAX_SIDEBAR_WIDTH) {
-        setRightSidebarWidth(newWidth);
-      }
-    }
-  };
+  const { leftSidebarWidth, rightSidebarWidth, selectedDivId, mainRef, handleMouseDown } = useDragging();
 
   const deleteBlock = (id?: string) => {
-    if (quizSession && id) {
-      const updatedQuiz = (quizSession.quiz as ContainerBlock).copy();
-
-      // Filter out the block with the given id
-      updatedQuiz.children = updatedQuiz.children.filter(block => block.id !== id);
-
-      // Update the quiz session
-      setQuizSession({ ...quizSession, quiz: updatedQuiz });
-    }
+    deleteBlockHandler(quizSession, setQuizSession, id);
   };
 
   const addBlock = (block: QuizBlock) => {
-    if (!quizSession) return;
-  
-    if (!block.id) {
-      block.id = nextId.toString();
-    }
-  
-    const updatedQuiz = (quizSession.quiz as ContainerBlock).copy();
-  
-    if (!selectedDivId) {
-      // If no block is selected, add the new block to the end of the root container's children
-      updatedQuiz.children.push(block);
-    } else {
-      const findAndAddBlock = (container: ContainerBlock): ContainerBlock => {
-        const newContainer = container.copy();
-
-        if(container.id === selectedDivId) {
-          newContainer.children.push(block);
-          return newContainer;
-        }
-  
-        for (let i = 0; i < newContainer.children.length; i++) {
-          const child = newContainer.children[i];
-  
-          if (child.id === selectedDivId) {
-              if (child instanceof ContainerBlock) {
-                newContainer.children[i] = child.copy();
-                (newContainer.children[i] as ContainerBlock).children.push(block);
-              } else {
-                // Otherwise, add the new container after the selected block
-                newContainer.children.splice(i + 1, 0, block);
-              }
-            return newContainer;
-          }
-  
-          if (child instanceof ContainerBlock) {
-            newContainer.children[i] = findAndAddBlock(child);
-          }
-        }
-  
-        return newContainer;
-      };
-  
-      const updatedQuizWithNewBlock = findAndAddBlock(updatedQuiz);
-      setQuizSession({ ...quizSession, quiz: updatedQuizWithNewBlock });
-    }
-  
-    updateNext();
-    
-  };
-  
-  
-
-
-  useEffect(() => {
-    document.addEventListener('mousemove', handleMouseMove);
-    document.addEventListener('mouseup', handleMouseUp);
-    document.addEventListener('click', handleDivClick);
-
-    return () => {
-      document.removeEventListener('mousemove', handleMouseMove);
-      document.removeEventListener('mouseup', handleMouseUp);
-      document.removeEventListener('click', handleDivClick);
-    };
-  }, [dragging]);
-
-  useEffect(() => {
-    // If quizData doesn't exist, redirect to the homepage
-    if (!quizSession) {
-      router.push('/');
-    }
-  }, [quizSession, router]);
-
-
-  const handleDivClick = (e: MouseEvent) => {
-    if(mainRef.current && mainRef.current.contains(e.target as Node))
-      if(!mainRef.current.isEqualNode(e.target as Node))
-        setSelectedDivId((e.target as HTMLElement).id);
-      else
-        setSelectedDivId(null);
-
-    
+    addBlockHandler(block, quizSession, setQuizSession, selectedDivId, nextId, setNextId);
   };
 
-  const isSelected = (id: string) => selectedDivId === id;
 
   return (
     <div className="min-h-screen max-h-screen flex flex-col">

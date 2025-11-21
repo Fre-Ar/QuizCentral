@@ -7,6 +7,8 @@ import { TextBlock } from '@/components/quiz_components/info/text-comp';
 import { QuizSession } from '@/components/session-context';
 import { parseQuizData } from '@/lib/utils';
 import { getCookie } from '@/lib/utils';
+import { parseQuizBlock } from '@/lib/utils';
+import { QuizBlock } from '@/components/quiz_components/quiz-comp';
 
 /**
  * Creates and initializes a new QuizSession with default UI blocks and settings.
@@ -178,3 +180,94 @@ export const loadQuiz = async (setQuizSession: (session: QuizSession) => void, p
         }
 };
 
+export const parseQuizDisplay = (json: any): React.JSX.Element => {
+    if (
+    json &&
+    typeof json === 'object' &&
+    typeof json.hash === 'string' &&
+    typeof json.quiz === 'object' &&
+    Array.isArray(json.groups) &&
+    Array.isArray(json.custom) &&
+    typeof json.settings === 'object'
+    ) {
+    try {
+        const parsedQuiz = parseQuizBlock(json.quiz).asDisplay(); // Parse the main quiz block
+        return parsedQuiz;
+    } catch (error) {
+        console.error('Error parsing quiz blocks:', error);
+        return <div/>;
+    }
+    }
+    return <div/>;
+};
+
+export const deleteBlockHandler = (quizSession: QuizSession | null, setQuizSession: (session: QuizSession) => void, id?: string ) => {
+    if (quizSession && id) {
+      const updatedQuiz = (quizSession.quiz as ContainerBlock).copy();
+
+      // Filter out the block with the given id
+      updatedQuiz.children = updatedQuiz.children.filter(block => block.id !== id);
+
+      // Update the quiz session
+      setQuizSession({ ...quizSession, quiz: updatedQuiz });
+    }
+  };
+
+const updateNext = (quizSession: QuizSession | null, nextId: number, setNextId: (id: number) => void, setQuizSession: (session: QuizSession) => void) => {
+    setNextId(nextId + 1);
+    if(quizSession){
+      setQuizSession({ ...quizSession, nextId: nextId+1});
+    }
+    
+  }
+
+export const addBlockHandler = (block: QuizBlock, quizSession: QuizSession | null, setQuizSession: (session: QuizSession) => void, selectedDivId: string | null, nextId: number, setNextId: (id: number) => void) => {
+    if (!quizSession) return;
+  
+    if (!block.id) {
+      block.id = nextId.toString();
+    }
+  
+    const updatedQuiz = (quizSession.quiz as ContainerBlock).copy();
+  
+    if (!selectedDivId) {
+      // If no block is selected, add the new block to the end of the root container's children
+      updatedQuiz.children.push(block);
+    } else {
+      const findAndAddBlock = (container: ContainerBlock): ContainerBlock => {
+        const newContainer = container.copy();
+
+        if(container.id === selectedDivId) {
+          newContainer.children.push(block);
+          return newContainer;
+        }
+  
+        for (let i = 0; i < newContainer.children.length; i++) {
+          const child = newContainer.children[i];
+  
+          if (child.id === selectedDivId) {
+              if (child instanceof ContainerBlock) {
+                newContainer.children[i] = child.copy();
+                (newContainer.children[i] as ContainerBlock).children.push(block);
+              } else {
+                // Otherwise, add the new container after the selected block
+                newContainer.children.splice(i + 1, 0, block);
+              }
+            return newContainer;
+          }
+  
+          if (child instanceof ContainerBlock) {
+            newContainer.children[i] = findAndAddBlock(child);
+          }
+        }
+  
+        return newContainer;
+      };
+  
+      const updatedQuizWithNewBlock = findAndAddBlock(updatedQuiz);
+      setQuizSession({ ...quizSession, quiz: updatedQuizWithNewBlock });
+    }
+  
+    updateNext(quizSession, nextId, setNextId, setQuizSession);
+    
+  };

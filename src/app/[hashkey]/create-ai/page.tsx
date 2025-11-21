@@ -16,57 +16,13 @@ import { FaCog, FaCodeBranch, FaCss3Alt } from "react-icons/fa";
 
 import InputComponent from '@/components/quiz_components/variables/input-comp';
 import TextComponent from '@/components/quiz_components/info/text-comp';
-
-const MIN_SIDEBAR_WIDTH = 0;
-const DEFAULT_SIDEBAR_WIDTH = 20;
-const MAX_SIDEBAR_WIDTH = 100;
+import { useDragging } from '@/hooks/resizing';
+import { useQuizSession } from '@/hooks/quiz';
 
 export default function Page() {
-  const { quizSession, setQuizSession } = useQuiz();
-  const router = useRouter()
 
-  const [leftTab, setLeftTab] = useState<'settings' | 'conditions' | 'styling'>('settings');
-  const [leftSidebarWidth, setLeftSidebarWidth] = useState(DEFAULT_SIDEBAR_WIDTH);
-  const [dragging, setDragging] = useState<string | null>(null);
-
-  const handleMouseDown = (sidebar: string) => {
-    setDragging(sidebar);
-  };
-
-  const handleMouseUp = () => {
-    setDragging(null);
-  };
-
-  const handleMouseMove = (e: MouseEvent) => {
-    if (!dragging) return;
-
-    const totalWidth = window.innerWidth;
-
-    if (dragging === 'left') {
-      const newWidth = (e.clientX / totalWidth) * 100;
-      if (newWidth >= MIN_SIDEBAR_WIDTH && newWidth <= MAX_SIDEBAR_WIDTH) {
-        setLeftSidebarWidth(newWidth);
-      }
-    }
-  };
-
-
-  useEffect(() => {
-    document.addEventListener('mousemove', handleMouseMove);
-    document.addEventListener('mouseup', handleMouseUp);
-
-    return () => {
-      document.removeEventListener('mousemove', handleMouseMove);
-      document.removeEventListener('mouseup', handleMouseUp);
-    };
-  }, [dragging]);
-
-  useEffect(() => {
-    // If quizData doesn't exist, redirect to the homepage
-    if (!quizSession) {
-      router.push('/');
-    }
-  }, [quizSession, router]);
+  const { leftSidebarWidth, rightSidebarWidth, selectedDivId, mainRef, handleMouseDown } = useDragging();
+  const { quizSession, setQuizSession }  = useQuizSession();
 
   return (
     <div className="min-h-screen max-h-screen flex flex-col">
