@@ -1,8 +1,12 @@
 'use client';
 
 import React, { useState, useEffect, useRef} from 'react';
-import { useQuiz, Group, QuizSession } from '@/components/session-context';
 import { useRouter } from 'next/navigation';
+
+
+import { useQuiz, Group, QuizSession } from '@/components/session-context';
+import { useQuizSession } from '@/hooks/quiz';
+import { saveQuizToSupabase } from '@/lib/utils';
 
 import Header from '@/components/header';
 import NavMenu from '@/components/nav-menu';
@@ -12,33 +16,10 @@ import { v4 as uuidv4 } from 'uuid';
 
 
 export default function Page()  {
-  const { quizSession, setQuizSession } = useQuiz();
-  const router = useRouter()
+  const { quizSession, setQuizSession }  = useQuizSession(); 
 
   const [expandedGroups, setExpandedGroups] = useState<string[]>([]);
 
-  const saveQuizToSupabase = async (quizSession: QuizSession, launchedGroup: Group) => {
-    try {
-
-      const response = await fetch('/api/quiz/launch-quiz', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({quizSession: quizSession, launchedGroup: launchedGroup}),
-      });
-
-      const data = await response.json();
-
-      if (data.error) throw new Error(data.error);
-
-      document.cookie = `quizHash=${quizSession?.hash}; path=/; max-age=${7 * 24 * 60 * 60}; secure; samesite=strict`;
-
-    } catch (error) {
-      console.error('Error saving launched group and users:', error);
-    }
-  };
-  
 
   // Function to generate a unique ID of less than 16 characters
   const generateAccessId = () => {
@@ -109,14 +90,6 @@ export default function Page()  {
       setExpandedGroups([...expandedGroups, groupId]);
     }
   };
-
-
-  useEffect(() => {
-    // If quizData doesn't exist, redirect to the homepage
-    if (!quizSession) {
-      router.push('/');
-    }
-  }, [quizSession, router]);
 
   return (
     <div className="min-h-screen max-h-screen flex flex-col">

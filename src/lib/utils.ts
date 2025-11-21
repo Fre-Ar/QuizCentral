@@ -3,9 +3,8 @@ import { ContainerBlock } from "@/components/quiz_components/container-comp";
 import { TextBlock } from "@/components/quiz_components/info/text-comp";
 import { ButtonBlock } from "@/components/quiz_components/variables/button-comp";
 import { InputBlock } from "@/components/quiz_components/variables/input-comp";
-import { QuizSession } from "@/components/session-context";
+import { QuizSession, Group } from "@/components/session-context";
 import { types, VarBlock } from "@/components/quiz_components/variables/var-comp";
-
 
 /**
  * Serialize a quiz session object to JSON and trigger a browser download of the resulting file.
@@ -252,3 +251,25 @@ export function downloadQuizSession(quizSession: any, filename: string = 'quizSe
     }
     return null;
   };
+
+export const saveQuizToSupabase = async (quizSession: QuizSession, launchedGroup: Group) => {
+  try {
+
+    const response = await fetch('/api/quiz/launch-quiz', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({quizSession: quizSession, launchedGroup: launchedGroup}),
+    });
+
+    const data = await response.json();
+
+    if (data.error) throw new Error(data.error);
+
+    document.cookie = `quizHash=${quizSession?.hash}; path=/; max-age=${7 * 24 * 60 * 60}; secure; samesite=strict`;
+
+  } catch (error) {
+    console.error('Error saving launched group and users:', error);
+  }
+};
