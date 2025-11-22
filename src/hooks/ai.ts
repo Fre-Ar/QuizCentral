@@ -20,9 +20,9 @@ export function useOpenAPISending(apiKey: string | null){
         const client = new OpenAI({ apiKey, dangerouslyAllowBrowser: true });
 
         const completion = await client.chat.completions.create({
-            model: 'gpt-4.1-mini', // or whatever model
+            model: 'gpt-5-nano', 
             messages: [
-            { role: 'system', content: 'You are a helpful assistant.' },
+            { role: 'system', content: 'You are a helpful Quiz-making assistant.' },
             { role: 'user', content: input },
             ],
         });
