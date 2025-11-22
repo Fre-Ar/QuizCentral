@@ -1,32 +1,29 @@
 'use client';
 
-import React, { useState, useEffect, useRef} from 'react';
-import { useQuiz } from '@/components/session-context';
-import { useRouter } from 'next/navigation';
+import React, { useState} from 'react';
 
 import Header from '@/components/header';
 import NavMenu from '@/components/nav-menu';
-import DragHandle from '@/components/drag-handle';
-import Accordion from '@/components/accordion';
+import DragHandle from '@/components/drag-handle'; 
 import Sidebar from '@/components/sidebar';
 import SideButton from '@/components/side-button';
-import ContainerComponent from '@/components/quiz_components/container-comp';
 import OpenAIKeyInput from '@/components/openAiKeyInput';
 import { FaCog, FaCodeBranch, FaCss3Alt } from "react-icons/fa";
-import { useApiKey } from '@/hooks/ai';
-import InputComponent from '@/components/quiz_components/variables/input-comp';
-import TextComponent from '@/components/quiz_components/info/text-comp';
 import { useDragging } from '@/hooks/resizing';
 import { useQuizSession } from '@/hooks/quiz';
+import { useOpenAPISending } from '@/hooks/ai';
 
 export default function Page() {
 
   const { leftSidebarWidth, rightSidebarWidth, selectedDivId, mainRef, handleMouseDown } = useDragging();
   const { quizSession, setQuizSession }  = useQuizSession();
-  const { apiKey, setApiKey } = useApiKey();
-  const [input, setInput] = useState('');
-  const [reply, setReply] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
+  const [apiKey, setApiKey] = useState<string | null>(null);
+  const { input, setInput, reply, isLoading, sendPrompt } = useOpenAPISending(apiKey);
+  
+
+  const handleSend = async () => { 
+    await sendPrompt();
+  };
 
   return (
     <div className="min-h-screen max-h-screen flex flex-col">
@@ -58,7 +55,34 @@ export default function Page() {
           style={{
             width: `calc(100% - ${leftSidebarWidth}%  - 5px)`, // 5px for the resizer
           }}>
+
+          <div className="p-4 space-y-4 flex flex-col w-1/2">
             <OpenAIKeyInput onKeyChange={setApiKey} />
+
+            <textarea
+              className="w-full border rounded p-2 bg-black resize-none"
+              rows={4}
+              col={50}
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              placeholder="Ask something..."/>
+
+            <button
+              onClick={handleSend}
+              disabled={isLoading || !input}
+              className="bg-uni-blue disabled:bg-uni-grey text-white font-bold py-4 px-8 rounded"
+            >
+              {'Send'}
+            </button>
+
+            {isLoading ? 'Sending...' : ''}
+
+            {reply && (
+              <div className="border rounded p-2 whitespace-pre-wrap text-wrap">
+                {reply}
+              </div>
+            )}
+          </div>
 
         </main>
       </div>   
