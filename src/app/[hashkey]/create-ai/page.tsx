@@ -62,7 +62,7 @@ export default function Page() {
             <textarea
               className="w-full border rounded p-2 bg-black resize-none"
               rows={4}
-              col={50}
+              cols={50}
               value={input}
               onChange={(e) => setInput(e.target.value)}
               placeholder="Ask something..."/>

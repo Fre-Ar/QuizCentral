@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import OpenAI from 'openai';
 
 export function useOpenAPISending(apiKey: string | null){
     const [input, setInput] = useState('');
