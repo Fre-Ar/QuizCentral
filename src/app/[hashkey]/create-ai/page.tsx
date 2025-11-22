@@ -11,9 +11,9 @@ import Accordion from '@/components/accordion';
 import Sidebar from '@/components/sidebar';
 import SideButton from '@/components/side-button';
 import ContainerComponent from '@/components/quiz_components/container-comp';
-
+import OpenAIKeyInput from '@/components/openAiKeyInput';
 import { FaCog, FaCodeBranch, FaCss3Alt } from "react-icons/fa";
-
+import { useApiKey } from '@/hooks/ai';
 import InputComponent from '@/components/quiz_components/variables/input-comp';
 import TextComponent from '@/components/quiz_components/info/text-comp';
 import { useDragging } from '@/hooks/resizing';
@@ -23,6 +23,10 @@ export default function Page() {
 
   const { leftSidebarWidth, rightSidebarWidth, selectedDivId, mainRef, handleMouseDown } = useDragging();
   const { quizSession, setQuizSession }  = useQuizSession();
+  const { apiKey, setApiKey } = useApiKey();
+  const [input, setInput] = useState('');
+  const [reply, setReply] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
 
   return (
     <div className="min-h-screen max-h-screen flex flex-col">
@@ -54,8 +58,7 @@ export default function Page() {
           style={{
             width: `calc(100% - ${leftSidebarWidth}%  - 5px)`, // 5px for the resizer
           }}>
-
-
+            <OpenAIKeyInput onKeyChange={setApiKey} />
 
         </main>
       </div>   
