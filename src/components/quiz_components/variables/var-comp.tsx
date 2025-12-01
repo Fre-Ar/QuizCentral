@@ -387,3 +387,4 @@ interface VarCompProps extends QuizCompProps {
   // possibly tooltip (string)
 
   // central (string or number or false), neutral (string or number or false), incomplete(boolean)  for all
+
