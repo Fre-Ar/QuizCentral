@@ -11,6 +11,7 @@
   "dependencies": {
     "@react-oauth/google": "^0.12.2",
     "@supabase/supabase-js": "^2.44.4",
+    "google-auth-library": "^10.5.0",
     "json-logic-js": "^2.0.3",
     "next": "^14.2.33",
     "nodemailer": "^7.0.10",
