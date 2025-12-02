@@ -9,15 +9,16 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@react-oauth/google": "^0.12.2",
     "@supabase/supabase-js": "^2.44.4",
+    "json-logic-js": "^2.0.3",
     "next": "^14.2.33",
     "nodemailer": "^7.0.10",
+    "openai": "^4.8.0",
     "react": "^18",
     "react-dom": "^18",
     "react-icons": "^5.2.1",
-    "uuid": "^10.0.0",
-    "openai": "^4.8.0",
-    "json-logic-js": "^2.0.3"
+    "uuid": "^10.0.0"
   },
   "devDependencies": {
     "@types/node": "^20",
