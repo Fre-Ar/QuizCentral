@@ -253,7 +253,7 @@ export function downloadQuizSession(quizSession: any, filename: string = 'quizSe
     return null;
   };
 
-export const saveQuizToSupabase = async (quizSession: QuizSession, launchedGroup: Group) => {
+export const launchQuizToSupabase = async (quizSession: QuizSession, launchedGroup: Group) => {
   try {
 
     const response = await fetch('/api/quiz/launch-quiz', {
@@ -274,6 +274,29 @@ export const saveQuizToSupabase = async (quizSession: QuizSession, launchedGroup
     console.error('Error saving launched group and users:', error);
   }
 };
+
+export const saveQuizToSupabase = async (quizSession: QuizSession) => {
+    try {
+
+      const response = await fetch('/api/quiz/save-quiz', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({quizJson: quizSession}),
+      });
+    
+      const data = await response.json();
+
+      if (data.error) throw new Error(data.status);
+
+      document.cookie = `quizHash=${quizSession?.hash}; path=/; max-age=${7 * 24 * 60 * 60}; secure; samesite=strict`;
+
+      alert(data.message);
+    } catch (error) {
+      console.error('Error saving quiz to database:', error);
+    }
+  };
 
 // Function to handle the file upload and parse the JSON
  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>, setQuizSession: (data: QuizSession | null) => void) => {

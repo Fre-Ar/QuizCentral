@@ -15,36 +15,13 @@ import { promptFileUpload } from '@/lib/utils';
 import { QuizSession } from '@/components/session-context';
 import { useDragging } from '@/hooks/resizing';
 import { useQuizSession } from '@/hooks/quiz';
-
+import { saveQuizToSupabase } from '@/lib/utils';
 
 export default function Page() {
   const  {quizSession, setQuizSession} = useQuizSession();
   const { leftSidebarWidth,  rightSidebarWidth,  selectedDivId, mainRef, handleMouseDown } = useDragging();
 
   const [leftTab, setLeftTab] = useState<'settings' | 'conditions' | 'styling'>('settings');
-
-  const saveQuizToSupabase = async (quizSession: QuizSession) => {
-    try {
-
-      const response = await fetch('/api/quiz/save-quiz', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({quizJson: quizSession}),
-      });
-    
-      const data = await response.json();
-
-      if (data.error) throw new Error(data.status);
-
-      document.cookie = `quizHash=${quizSession?.hash}; path=/; max-age=${7 * 24 * 60 * 60}; secure; samesite=strict`;
-
-      alert(data.message);
-    } catch (error) {
-      console.error('Error saving quiz to database:', error);
-    }
-  };
 
   const handleTitleChange = (e: React.ChangeEvent<HTMLInputElement>) =>
     quizSession && setQuizSession({ ...quizSession, settings: { ...quizSession.settings, quizSettings: { ...quizSession.settings.quizSettings, title: e.target.value } } });
