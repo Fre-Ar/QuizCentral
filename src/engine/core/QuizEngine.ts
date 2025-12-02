@@ -92,6 +92,11 @@ export class QuizEngine {
         hasChanges = true;
         break;
       }
+
+      // TODO: Implement other actions like EXECUTE_LISTENER AND MAYBE INIT_SESSION
+      default:
+        console.warn(`Unhandled action type: ${(action as any).type}`);
+        break;
     }
 
     if (hasChanges) {
