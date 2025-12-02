@@ -8,9 +8,13 @@ import { useQuiz } from '@/components/session-context';
 import { useRouter } from 'next/navigation';
 import { createDefaultQuiz, loadQuiz } from '@/handlers/quiz-handler';
 import GoogleLoginButton from "../components/GoogleLoginButton";
+import { useGoogleId } from "@/hooks/googleId";
+
 export default function Home() {
 
   const { setQuizSession } = useQuiz();
+  const { googleId, setGoogleId } = useGoogleId();
+  
   const router = useRouter()
 
  /**
@@ -53,7 +57,8 @@ export default function Home() {
             
               <button className="bg-uni-blue text-white font-bold py-4 px-8 rounded" onClick={handleLoadQuiz}>Load Quiz</button>
 
-              <GoogleLoginButton />
+              {!googleId && <GoogleLoginButton /> }
+              
 
           </div>
         </div>

@@ -1,8 +1,12 @@
 "use client";
 
 import { GoogleLogin } from "@react-oauth/google";
+import { useGoogleId } from "@/hooks/googleId";
+import { useEffect } from "react";  
 
 export default function GoogleLoginButton() {
+  const { googleId, setGoogleId } = useGoogleId();
+
   return (
     <GoogleLogin
       onSuccess={async (credentialResponse) => {
@@ -14,7 +18,11 @@ export default function GoogleLoginButton() {
           body: JSON.stringify({ token }),
         });
 
-        console.log("Backend data:", await res.json());
+        const responseJson = await res.json();
+        setGoogleId(responseJson.user.googleId);
+
+        document.cookie = `googleId=${responseJson.user.googleId}; path=/; max-age=${7 * 24 * 60 * 60}; secure; samesite=strict`;
+
       }}
       onError={() => console.log("Login Failed")}
     />
