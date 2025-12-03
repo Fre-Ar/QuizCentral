@@ -5,6 +5,7 @@ export const useQuizEngine = () => {
   
   return {
     dispatch: engine.dispatch.bind(engine),
+    engine: engine,
     // Expose other engine methods if needed, e.g., engine.getMetadata()
   };
 };

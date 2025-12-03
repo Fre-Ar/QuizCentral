@@ -42,6 +42,10 @@ export class QuizEngine {
     return this.store;
   }
 
+  public getSchemaBlock(id: string): InteractionUnit | VisualBlock | undefined {
+    return this.schemaMap.get(id);
+  }
+
   /**
    * The Entry Point for all User Interactions.
    */
