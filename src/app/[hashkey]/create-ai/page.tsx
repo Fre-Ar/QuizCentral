@@ -60,7 +60,7 @@ export default function Page() {
             <OpenAIKeyInput onKeyChange={setApiKey} />
 
             <textarea
-              className="w-full border rounded p-2 bg-black resize-none"
+              className="w-full border rounded p-2 bg-black resize-none min-h-lg"
               rows={4}
               cols={50}
               value={input}
