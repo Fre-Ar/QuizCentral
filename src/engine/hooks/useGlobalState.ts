@@ -1,4 +1,4 @@
-import { useSyncExternalStore } from "react";
+import { useSyncExternalStore, useCallback } from "react";
 import { useQuizContext } from "./useQuizContext";
 import { QuizSessionState } from "../types/runtime";
 
@@ -12,8 +12,10 @@ export const useSessionState = <T>(
   const { engine } = useQuizContext();
   const store = engine.getStore();
 
+  const getSnapshot = useCallback(() => selector(store.getState()), [store, selector]);
+
   return useSyncExternalStore(
-    (callback) => store.subscribe(() => callback()),
-    () => selector(store.getState())
+    (cb) => store.subscribe(() => cb()),
+    getSnapshot
   );
 };

@@ -341,3 +341,23 @@ export interface ContainerProps extends BaseProps {
     pick_n?: number;
   };
 }
+
+
+
+// 4. Types for the Template System 
+export interface TemplateDefinition {
+  type: "template";
+  id: string;
+  name: string;
+  parameters: Record<string, any>; // Schema definition
+  structure: any; // The Blueprint
+}
+
+export interface TemplateInstance {
+  type: "template_instance";
+  id: string;
+  template_id: string;
+  parameters: Record<string, any>;
+  state?: any;
+  behavior?: any;
+}
