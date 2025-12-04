@@ -201,6 +201,7 @@ export function getGroupAccess(quizSession: QuizSession | null, setQuizSession: 
       
           const group = updatedGroups?.find(group => group.id === groupId);
           if (group) {
+            //TODO: Solve param mismatch probably needs new function or unpack quiz object
             await saveQuizToSupabase(quizSession, group);
     
             for (const user of group.emails) {
