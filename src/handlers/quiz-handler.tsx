@@ -6,7 +6,7 @@ import { InputBlock } from '@/components/quiz_components/variables/input-comp';
 import { TextBlock } from '@/components/quiz_components/info/text-comp';
 import { QuizSession } from '@/components/session-context';
 import { parseQuizData } from '@/lib/utils';
-import { getCookie } from '@/lib/utils';
+import { getCookie } from '@/lib/client-utils';
 import { parseQuizBlock } from '@/lib/utils';
 import { QuizBlock } from '@/components/quiz_components/quiz-comp';
 

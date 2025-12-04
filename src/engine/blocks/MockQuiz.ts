@@ -139,7 +139,7 @@ const Q2_option1: ToggleBlock = {
 }
 
 const Q2_option2: ToggleBlock = {
-  id: "toggle_001",
+  id: "toggle_002",
   type: "toggle",
   props: {
     variant: "radio",
@@ -156,7 +156,7 @@ const Q2_option2: ToggleBlock = {
 }
 
 const Q2_option3: ToggleBlock = {
-  id: "toggle_001",
+  id: "toggle_003",
   type: "toggle",
   props: {
     variant: "radio",
@@ -173,7 +173,7 @@ const Q2_option3: ToggleBlock = {
 }
 
 const Q2_option4: ToggleBlock = {
-  id: "toggle_001",
+  id: "toggle_004",
   type: "toggle",
   props: {
     variant: "radio",

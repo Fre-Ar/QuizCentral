@@ -1,9 +1,10 @@
+'use client';
+
 import { useState, useEffect } from 'react';
-import { getCookie } from '@/lib/utils';
+import { getCookie } from '@/lib/client-utils';
 
 export function useGoogleId() {
     const [googleId, setGoogleId] = useState<string | null>(null);
-    const googleIdCookie = getCookie('googleId');
     
     useEffect(() => {
         const googleIdCookie = getCookie("googleId");

@@ -7,14 +7,13 @@ import { parseQuizDisplay } from '@/handlers/quiz-handler';
 import { useQuiz } from '@/hooks/quiz';
 
 interface QuizPageProps {
-  params: {
-    hashKey: string;
-    accessId: string;
-  };
+  params: Promise<{ hashKey: string; accessId: string }>;
 }
 
-const AccessQuizPage: React.FC<QuizPageProps> = ({ params }) => {
-    const { hashKey, accessId } = params;
+// TODO: This page has been updated with the new async page param pattern. Do the same for all others.
+// TODO: PAGES CANNOT HAVE REACT.FC TYPE ANYMORE.
+const AccessQuizPage = async ({ params }: QuizPageProps) => {
+    const { hashKey, accessId } = await params;
     const { quizData, loading, error } = useQuiz(hashKey, accessId);
      // Function to parse the quiz data
   

@@ -12,7 +12,7 @@ export default function TestPage() {
         <Header />
         <main className="grow flex justify-center">
           <div className="flex flex-col min-w-full border-l border-r border-uni-grey mx-4 lg:mx-0">
-               <QuizRenderer />
+            <QuizRenderer />
           </div>
         </main>
       </div>

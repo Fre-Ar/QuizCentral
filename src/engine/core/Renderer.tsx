@@ -32,9 +32,9 @@ export const QuizRenderer = () => {
       </div>
 
       {/* RIGHT: THE BRAIN (Debug) */}
-      <div className="w-96 bg-gray-900 text-red-600 p-6 rounded-xl font-mono text-xs overflow-auto h-[80vh]">
+      <div className="w-96 bg-gray-900 text-green-500 p-6 rounded-xl font-mono text-xs overflow-auto h-[80vh]">
         <h3 className="text-white font-bold mb-4 uppercase tracking-wider">Engine State</h3>
-        <pre className="text-black ">{JSON.stringify(session, null, 2)}</pre>
+        <pre>{JSON.stringify(session, null, 2)}</pre>
       </div>
     </div>
   );
