@@ -19,6 +19,7 @@ export type LogicExpression =
   | boolean
   | { [operator: string]: LogicExpression | LogicExpression[] | any };
 
+// TODO: Add default values in all of the schemas
 export type InteractionState = {
   value: any; // The current value held by the block
   visited?: boolean; // Has the user interacted/focused?
@@ -29,7 +30,7 @@ export type InteractionState = {
 // 2. DOMAIN SCHEMA (Data Modeling)
 // ============================================================================
 
-export type DomainID = string;
+export type DomainID = string | Array<any>;
 
 export interface DomainDefinition {
   id: DomainID;
@@ -338,7 +339,7 @@ export interface ContainerProps extends BaseProps {
   children: (InteractionUnit | VisualBlock)[];
   behavior?: {
     shuffle_children?: boolean;
-    pick_n?: number;
+    pick_n?: number | null; // null means show all
   };
 }
 

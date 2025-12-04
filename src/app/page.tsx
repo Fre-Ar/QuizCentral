@@ -3,7 +3,7 @@
 import React from 'react';
 
 import Link from 'next/link';
-import Header from '../components/header';
+import Header from '@/components/header';
 import { useQuiz } from '@/components/session-context';
 import { useRouter } from 'next/navigation';
 import { createDefaultQuiz, loadQuiz } from '@/handlers/quiz-handler';
@@ -59,7 +59,9 @@ export default function Home() {
 
               {!googleId && <GoogleLoginButton /> }
               
-
+              <Link href="/test">
+                <button className="bg-uni-red text-white font-bold py-4 px-8 rounded">Test Features</button>
+              </Link>
           </div>
         </div>
       </main>
