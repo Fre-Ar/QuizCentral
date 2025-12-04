@@ -1,6 +1,15 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss";
+@plugin "@tailwindcss/typography";
+
+@theme {
+  --color-uni-blue:  #00a9db;
+  --color-uni-red:   #dc021b;
+  --color-uni-light: #8d8d8d;
+  --color-uni-grey:  #5c5c5c;
+  --color-uni-black: #3b3b3b;
+  --color-uni-selec: #00a9db;
+  --color-uni-pink:  #ec808c;
+}
 
 :root {
   --foreground-rgb: 0, 0, 0;
