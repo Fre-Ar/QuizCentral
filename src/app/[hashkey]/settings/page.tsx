@@ -7,15 +7,15 @@ import NavMenu from '@/components/nav-menu';
 import DragHandle from '@/components/drag-handle';
 import Sidebar from '@/components/sidebar';
 import SideButton from '@/components/side-button';
-import { parseQuizData, downloadQuizSession } from '@/lib/utils';
+import { downloadQuizSession } from '@/lib/client-utils';
 
 import { FaCog, FaCodeBranch, FaCss3Alt, FaFolder, FaDatabase } from "react-icons/fa";
 
-import { promptFileUpload } from '@/lib/utils';
+import { promptFileUpload } from '@/lib/client-utils';
 import { QuizSession } from '@/components/session-context';
 import { useDragging } from '@/hooks/resizing';
 import { useQuizSession } from '@/hooks/quiz';
-import { saveQuizToSupabase } from '@/lib/utils';
+import { saveQuizToSupabase } from '@/lib/client-utils';
 
 export default function Page() {
   const  {quizSession, setQuizSession} = useQuizSession();

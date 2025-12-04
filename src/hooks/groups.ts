@@ -1,7 +1,7 @@
 import { QuizSession } from '@/components/session-context';
 import { Group, GroupSettings, User } from '@/components/session-context';
 import { useState, useRef } from 'react';
-import { generateAccessId, saveQuizToSupabase, sendEmailToUser } from '@/lib/utils'
+import { generateAccessId, saveQuizToSupabase, sendEmailToUser } from '@/lib/client-utils'
 
 const updateNext = (quizSession: QuizSession | null, setQuizSession: (session: QuizSession) => void, nextId: number, setNextId: (id: number) => void) => {
     setNextId(nextId + 1);
