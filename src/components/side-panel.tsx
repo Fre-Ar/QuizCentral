@@ -89,7 +89,7 @@ export default function SidePanel({ Position, Width, Tab, AddBlock, Selected, Qu
         <Sidebar width={Width}>
           <div className="flex flex-row mb-4 items-center w-full">
             <button
-              className={`flex-grow p-1 ${tab === 'blocks' ? 'bg-uni-light text-white' : 'bg-uni-black text-uni-grey'}`}
+              className={`grow p-1 ${tab === 'blocks' ? 'bg-uni-light text-white' : 'bg-uni-black text-uni-grey'}`}
               onClick={() => {
                 setTab('blocks');
               }}
@@ -97,7 +97,7 @@ export default function SidePanel({ Position, Width, Tab, AddBlock, Selected, Qu
               Blocks
             </button>
             <button
-              className={`flex-grow p-1 ${tab === 'settings' ? 'bg-uni-light text-white' : 'bg-uni-black text-uni-grey'}`}
+              className={`grow p-1 ${tab === 'settings' ? 'bg-uni-light text-white' : 'bg-uni-black text-uni-grey'}`}
               onClick={() => {
                 setTab('settings');
               }}

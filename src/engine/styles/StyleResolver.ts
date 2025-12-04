@@ -91,8 +91,8 @@ export class StyleResolver {
     if (p.justify_content) classes.push(`justify-${p.justify_content}`);
     
     // Flex Child
-    if (p.flex_grow) classes.push("flex-grow");
-    if (p.flex_shrink) classes.push("flex-shrink");
+    if (p.flex_grow) classes.push("grow");
+    if (p.flex_shrink) classes.push("shrink");
 
     // --- SPACING ---
     if (p.padding) classes.push(p.padding === "none" ? "p-0" : `p-${SPACING[p.padding]}`);

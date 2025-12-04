@@ -34,7 +34,7 @@ export default function Page() {
     <div className="min-h-screen max-h-screen flex flex-col">
       <Header />
       <NavMenu tab="create" />
-      <div className="flex flex-grow overflow-hidden">
+      <div className="flex grow overflow-hidden">
 
         <SidePanel Width={`${leftSidebarWidth}%`} Tab='blocks' Position='left' AddBlock={addBlock} 
         Selected={selectedDivId} QuizSession={quizSession} SetQuizSession={setQuizSession}/>
@@ -43,7 +43,7 @@ export default function Page() {
         <DragHandle onMouseDown={() => handleMouseDown('left')}/>
 
 
-        <main ref={mainRef} className="flex-grow flex center-fix overflow-auto text-nowrap"           
+        <main ref={mainRef} className="grow flex center-fix overflow-auto text-nowrap"           
           style={{
             width: `calc(100% - ${leftSidebarWidth}% - ${rightSidebarWidth}% - 10px)`, // 10px for the resizers
           }}>

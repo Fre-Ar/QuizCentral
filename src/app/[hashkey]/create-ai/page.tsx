@@ -29,7 +29,7 @@ export default function Page() {
     <div className="min-h-screen max-h-screen flex flex-col">
       <Header />
       <NavMenu tab="ai"/>
-      <div className="flex flex-grow overflow-hidden">
+      <div className="flex grow overflow-hidden">
 
 
       <Sidebar width={`${leftSidebarWidth}%`}>
@@ -51,7 +51,7 @@ export default function Page() {
         <DragHandle onMouseDown={() => handleMouseDown('left')}/>
 
 
-        <main className="flex-grow flex center-fix overflow-auto text-nowrap"           
+        <main className="grow flex center-fix overflow-auto text-nowrap"           
           style={{
             width: `calc(100% - ${leftSidebarWidth}%  - 5px)`, // 5px for the resizer
           }}>

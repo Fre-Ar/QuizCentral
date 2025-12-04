@@ -16,7 +16,7 @@ export const ImageBlock: React.FC<ImageBlockProps> = ({ block }) => {
   // Maps schema aspect strings to Tailwind classes
   const aspectClass = 
     props.aspect === "16:9" ? "aspect-video" :
-    props.aspect === "4:3" ? "aspect-[4/3]" :
+    props.aspect === "4:3" ? "aspect-4/3" :
     props.aspect === "1:1" ? "aspect-square" :
     ""; // Default/Natural
 

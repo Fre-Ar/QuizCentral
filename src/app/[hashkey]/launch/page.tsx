@@ -20,11 +20,11 @@ export default function Page()  {
     <div className="min-h-screen max-h-screen flex flex-col">
       <Header />
       <NavMenu tab="launch"/>
-      <div className="flex flex-grow overflow-hidden">
+      <div className="flex grow overflow-hidden">
 
 
 
-        <main className="flex-grow flex center-fix overflow-auto text-nowrap">
+        <main className="grow flex center-fix overflow-auto text-nowrap">
           <div className="flex flex-col border-x border-uni-grey mx-4 p-4 gap-y-4 ">
             <span className="flex flex-row w-full gap-x-2 items-center">
               <FaRocket size="4em" className="text-white bg-uni-grey rounded p-2"/>

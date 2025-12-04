@@ -29,8 +29,8 @@ const AccessQuizPage: React.FC<QuizPageProps> = ({ params }) => {
     return (
         <div className="min-h-screen flex flex-col">
             <Header />     
-            <div className="flex-grow flex center-fix overflow-auto text-nowrap">
-              <main className="flex-grow flex center-fix overflow-auto text-nowrap"
+            <div className="grow flex center-fix overflow-auto text-nowrap">
+              <main className="grow flex center-fix overflow-auto text-nowrap"
               style={{
                 width: `50%`,
               }}>
