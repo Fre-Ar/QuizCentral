@@ -1,5 +1,3 @@
-"use server";
-
 import { QuizBlock } from "@/components/quiz_components/quiz-comp";
 import { ContainerBlock } from "@/components/quiz_components/container-comp";
 import { TextBlock } from "@/components/quiz_components/info/text-comp";
