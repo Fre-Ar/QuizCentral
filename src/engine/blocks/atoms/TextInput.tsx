@@ -45,7 +45,7 @@ export const TextInput: React.FC<TextInputProps> = ({ block }) => {
 
   const handleBlur = useCallback(() => {
     if (parentId) {
-      dispatch({ type: "SET_VISITED", id: parentId });
+      dispatch({ type: "SET_NODE_PROPERTY", id: parentId, property: "visited", value: true });
     }
   }, [dispatch, parentId]);
 

@@ -2,11 +2,12 @@ import { StateStore } from "./StateStore";
 import { LogicEvaluator } from "./LogicEvaluator";
 import { DomainRegistry } from "../domains/DomainRegistry";
 import { 
-  QuizSchema, PageNode, InteractionUnit, VisualBlock, ContainerBlock
+  QuizSchema, PageNode, InteractionUnit, VisualBlock, ContainerBlock, MetaphorBlock
 } from "../types/schema";
 import { 
   QuizSessionState, BlockRuntimeState, RuntimeID, EngineAction, EvaluationContext 
 } from "../types/runtime";
+import { logTest } from "@/lib/utils";
 
 /**
  * The Orchestrator.
@@ -54,6 +55,8 @@ export class QuizEngine {
     let nextState = { ...currentState }; // Shallow copy root
     let hasChanges = false;
 
+    logTest("Dispatching action:", action);
+    
     switch (action.type) {
       case "SET_VALUE": {
         const node = nextState.nodes[action.id];
@@ -74,17 +77,46 @@ export class QuizEngine {
         nextState.nodes = { ...nextState.nodes, [action.id]: nextNode };
 
         hasChanges = true;
+
+        // 2. Commit State Immediately (so listeners see the new value)
+        this.store.setState(nextState);
+
+        // 3. Process Listeners (Side Effects)
+        // e.g. "q1.value" changed -> Run "q2" listeners
+        const sideEffects = this.processListeners(`${action.id}.value`, action.value);
+        if (sideEffects.length > 0) {
+           // If listeners caused MORE changes, we dispatch them recursively or apply them here.
+           // For simplicity, we apply them to the *current* nextState reference if possible, 
+           // but since we already committed, we should just let the recursion handle it via dispatch.
+           sideEffects.forEach(effect => this.dispatch(effect));
+           return; // dispatch will handle the subsequent recalculation
+        }
         break;
       }
 
-      case "SET_VISITED": {
+      case "SET_NODE_PROPERTY": {
         const node = nextState.nodes[action.id];
-        if (node && !node.visited) {
-          nextState.nodes = {
-            ...nextState.nodes,
-            [action.id]: { ...node, visited: true }
-          };
-          hasChanges = true;
+        if (!node) {
+          console.warn(`Attempted to set value for unknown node: ${action.id}`);
+          return;
+        }
+
+        // We strictly limit what properties can be set for safety
+        if (action.property === "required" || action.property === "visited") {
+          // TODO: MERGE VISITED AND TOUCHED
+           // Determine where the property lives. 
+           // 'visited' is on root, 'required' is in 'computed'.
+           
+           let nextNode = { ...node };
+           
+           if (action.property === "visited") {
+             nextNode.visited = action.value;
+           } else if (action.property === "required") {
+             nextNode.computed = { ...node.computed, required: action.value };
+           }
+
+           nextState.nodes = { ...nextState.nodes, [action.id]: nextNode };
+           hasChanges = true;
         }
         break;
       }
@@ -131,7 +163,7 @@ export class QuizEngine {
   private hydrateState(schema: QuizSchema): QuizSessionState {
     const nodes: Record<RuntimeID, BlockRuntimeState> = {};
 
-    const processBlock = (block: InteractionUnit | VisualBlock): RuntimeID => {
+    const processBlock = (block: InteractionUnit | VisualBlock, currentScopeId?: string): RuntimeID => {
       // Use existing ID or generate stable internal ID
       const id = block.id || `gen_${Math.random().toString(36).substr(2, 9)}`;
       
@@ -152,13 +184,13 @@ export class QuizEngine {
         baseState.computed.required = iu.state.required || false;
         
         // Recurse into the View (it might be a container)
-        processBlock(iu.view); 
+        processBlock(iu.view, id); 
       }
 
       // 2. Containers: Recurse Children
       if (block.type === "container") {
         const container = block as ContainerBlock;
-        const childIds = container.props.children.map(child => processBlock(child));
+        const childIds = container.props.children.map(child => processBlock(child, currentScopeId));
         baseState.childrenIds = childIds;
       }
 
@@ -181,6 +213,100 @@ export class QuizEngine {
       variables: {}, 
       nodes: nodes
     };
+  }
+
+  // ==========================================================================
+  // LISTENER PROCESSING 
+  // ==========================================================================
+
+  private processListeners(triggerKey: string, newValue: any): EngineAction[] {
+    const state = this.store.getState();
+    const effects: EngineAction[] = [];
+    
+    // Build context for evaluation
+    const context: EvaluationContext = {
+      globals: state.variables,
+      nodes: {},
+      ...{ [triggerKey]: newValue } // Inject the change that just happened
+    };
+    Object.values(state.nodes).forEach(n => {
+      context.nodes[n.id] = { value: n.value, ...n.computed };
+    });
+
+    // Iterate ALL blocks to find listeners
+    // Optimization: In prod, pre-index listeners by triggerKey
+    this.schemaMap.forEach((block, id) => {
+      if (block.type !== "interaction_unit") return;
+      const iu = block as InteractionUnit;
+      
+      const listeners = iu.behavior?.listeners;
+      if (!listeners || !listeners[triggerKey]) return;
+
+      const logicChain = listeners[triggerKey];
+      // logicChain is an array of expressions (steps) or a single expression
+      // The schema implies: "if": [ condition, action, else ]
+      // We evaluate the WHOLE thing. The return value should be the Action Description.
+      
+      // We assume logicChain is an "if" that returns an Action Object, e.g. {"set": ...}
+      // However, LogicEvaluator returns the RESULT of operations. 
+      // We need to interpret the "set" operator as returning an Action Descriptor, not performing it.
+      
+      // HACK for MVP: We use the LogicEvaluator, but we need 'set' to return data, not void.
+      // Standard JsonLogic 'set' doesn't exist. We must rely on our evaluator returning the struct.
+      // IF logicChain contains "set", we assume the schema intention is side-effect.
+      
+      const result = this.evaluator.evaluate(logicChain as any, context);
+      
+      if (result && typeof result === "object") {
+         this.handleEffectResult(result, id, effects);
+      }
+    });
+
+    return effects;
+  }
+
+  private handleEffectResult(result: any, contextId: string, effects: EngineAction[]) {
+    // Check if the result describes a known action
+    // Schema convention: { "set": [ target, value ] } returned by the IF
+    
+    // Since we can't easily return the "Instruction" from standard JsonLogic without custom operators
+    // that return the instruction rather than executing it, we infer from the structure if possible.
+    // OR we assume the LogicEvaluator has been configured to return the *Action Object* for 'set'.
+    
+    // For this MVP, let's look at the result. 
+    // If the 'if' evaluated to the 'true' branch, and that branch was { "set": ... }
+    // The evaluator would try to run "set".
+    
+    // CRITICAL: We need a custom 'set' operator in LogicEvaluator that returns 
+    // a special signature instead of trying to mutate anything.
+    // e.g. return { __action: "SET", target: args[0], value: args[1] }
+    
+    if (result && result.__action === "SET") {
+       // Target Resolution
+       // If target is {"var": "required"}, it means update 'computed.required' for self
+       // If target is {"var": "value"}, it means update 'value' for self
+       
+       const target = result.target; 
+       const val = result.value;
+
+       if (target === "required") {
+          // We can't dispatch SET_VALUE for 'required', we must manually mutate the node state
+          // or add a new Action Type. Let's mutate directly for now (dirty but works for Computed).
+          // Actually, 'required' is computed state. We should store it in variables if it's dynamic?
+          // No, let's treat it as an update.
+          // Implementation Detail: We need a SET_PROPERTY action.
+          // For MVP, let's just log it. Dynamic 'required' is complex.
+          console.log(`Setting REQUIRED on ${contextId} to ${val}`);
+          // Hack: Mutate store directly for this specific flag (Not recommended for prod)
+          const state = this.store.getState();
+          if (state.nodes[contextId]) {
+             state.nodes[contextId].computed.required = val;
+             this.store.setState({ ...state });
+          }
+       } else if (target === "value") {
+          effects.push({ type: "SET_VALUE", id: contextId, value: val });
+       }
+    }
   }
 
   // ==========================================================================
@@ -208,28 +334,59 @@ export class QuizEngine {
 
     // 2. Iterate all nodes to check Logic
     Object.values(nodes).forEach(node => {
-      const originalSchema = this.schemaMap.get(node.schemaId);
-      
-      if (originalSchema && originalSchema.type === "interaction_unit") {
-        const iu = originalSchema as InteractionUnit;
-        
-        if (iu.behavior) {
-          const isHidden = iu.behavior.hidden 
-            ? this.evaluator.evaluate(iu.behavior.hidden, context) 
-            : false;
-            
-          const isDisabled = iu.behavior.disabled 
-            ? this.evaluator.evaluate(iu.behavior.disabled, context) 
-            : false;
+      const schemaBlock = this.schemaMap.get(node.schemaId);
+      if (!schemaBlock) return;
 
-          if (isHidden !== node.computed.hidden || isDisabled !== node.computed.disabled) {
-            updates[node.id] = {
-              ...node,
-              computed: { ...node.computed, hidden: isHidden, disabled: isDisabled }
-            };
-            hasUpdates = true;
+      // RESOLVE THE LOCAL VALUE
+      // If I have a Scope (Parent IU), use its value.
+      // If not (I am the IU), use my own value.
+      let contextValue = node.value;
+      if (node.scopeId && nodes[node.scopeId]) {
+        contextValue = nodes[node.scopeId].value;
+      }
+
+      // 1. Prepare Local Context (Inject 'value' for self-reference)
+      // This fixes the issue where blocks refer to {"var": "value"}
+      const localContext = { 
+        ...context, 
+        value: contextValue
+      };
+
+      let isHidden = node.computed.hidden;
+      let isDisabled = node.computed.disabled;
+
+      // 2. CHECK INTERACTION UNIT BEHAVIOR
+      if (schemaBlock.type === "interaction_unit") {
+        const iu = schemaBlock as InteractionUnit;
+        if (iu.behavior) {
+          if (iu.behavior.hidden) {
+            isHidden = this.evaluator.evaluate(iu.behavior.hidden, localContext);
+          }
+          if (iu.behavior.disabled) {
+            isDisabled = this.evaluator.evaluate(iu.behavior.disabled, localContext);
           }
         }
+      }
+
+      // 3. CHECK VISUAL BLOCK STATE LOGIC (Triggers, Toggles, etc)
+      if ((schemaBlock as any).props?.state_logic) {
+         const sl = (schemaBlock as MetaphorBlock).props.state_logic;
+         if (sl) {
+            if (sl.hidden) {
+               isHidden = this.evaluator.evaluate(sl.hidden, localContext);
+            }
+            if (sl.disabled) {
+               isDisabled = this.evaluator.evaluate(sl.disabled, localContext);
+            }
+         }
+      }
+
+      if (isHidden !== node.computed.hidden || isDisabled !== node.computed.disabled) {
+        updates[node.id] = {
+          ...node,
+          computed: { ...node.computed, hidden: isHidden, disabled: isDisabled }
+        };
+        hasUpdates = true;
       }
     });
 

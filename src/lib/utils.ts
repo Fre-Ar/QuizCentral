@@ -110,3 +110,15 @@ export const parseQuizData = (json: any): QuizSession | null => {
 
   return null;
 };
+
+export function logTest(...parts: any[]): void {
+  if (process.env.NODE_ENV == "production") return;
+  if (parts.some((p) => typeof(p) !== "string" && typeof(p) !== "number" && typeof(p) !== "boolean")) {
+    console.warn(...parts);
+    return;
+  }
+  console.log(
+    "%c" + parts.map(String).join(" "),
+    "background: #2e4126; color: #b6fdab; padding: 2px 6px; border-radius: 4px;",
+  );
+}

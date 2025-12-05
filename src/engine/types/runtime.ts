@@ -52,6 +52,9 @@ export interface QuizSessionState {
 export interface BlockRuntimeState {
   id: RuntimeID;
   schemaId: string; // Reference to the static definition
+
+  // Link to the parent InteractionUnit that owns the data
+  scopeId?: string;
   
   // --- Data Binding ---
   // The actual value held by this block. 
@@ -115,6 +118,6 @@ export interface EvaluationContext {
 export type EngineAction = 
   | { type: "INIT_SESSION"; schema: any; initialState?: any }
   | { type: "SET_VALUE"; id: RuntimeID; value: any }
-  | { type: "SET_VISITED"; id: RuntimeID }
+  | { type: "SET_NODE_PROPERTY"; id: RuntimeID; property: string; value: any }
   | { type: "NAVIGATE"; targetId: string } // Next/Prev/Jump
   | { type: "EXECUTE_LISTENER"; ruleId: string }; // Trigger side-effects

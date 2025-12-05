@@ -39,7 +39,7 @@ export const Slider: React.FC<SliderProps> = ({ block }) => {
   }, [dispatch, parentId]);
 
   const handleBlur = useCallback(() => {
-    if (parentId) dispatch({ type: "SET_VISITED", id: parentId });
+    if (parentId) dispatch({ type: "SET_NODE_PROPERTY", id: parentId, property: "visited", value: true });
   }, [dispatch, parentId]);
 
   // 5. Visual Logic

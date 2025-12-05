@@ -102,6 +102,30 @@ export class LogicEvaluator {
       if (Array.isArray(a) && a.length === 0) return true;
       return false;
     });
+
+    // REFERENCE OPERATOR
+    // Usage: { "ref": "q1.value" }
+    // Returns: { __type: "pointer", path: "q1.value" }
+    this.registerOperator("ref", (path: any) => {
+      return { __type: "pointer", path: path };
+    });
+
+    // SET OPERATOR (Side Effect)
+    // Usage: { "set": [ { "ref": "q1.value" }, true ] }
+    this.registerOperator("set", (target: any, value: any) => {
+      
+      // Validation: Ensure we are setting a Reference, not a random value
+      if (target && typeof target === "object" && target.__type === "pointer") {
+        return { 
+          __action: "SET", 
+          target: target.path, // Unwrap the path string here
+          value: value 
+        };
+      }
+
+      console.warn("Invalid 'set' operation: Target must be a {ref: 'path'}", target);
+      return null;
+    });
   }
 
   /**

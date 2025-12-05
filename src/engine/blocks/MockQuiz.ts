@@ -79,14 +79,14 @@ const Q1_TRIGGER: TriggerBlock = {
 
     state_logic: {
       disabled: {
-        "==": [{ "var": "value" }, true] 
+        "==": [{ var: "value" }, true] 
       }
     },
 
     events: {
-        on_click: {
-          "set": [{ "var": "value" }, true],
-        },
+      on_click: {
+        "set": [{ ref: "value" }, true],
+      },
     },
   },
 }
@@ -149,7 +149,7 @@ const Q2_option1: ToggleBlock = {
     },
 
     events: {
-      on_click: { set: [{ var: "value" }, [1]] },
+      on_click: { "set": [{ var: "value" }, [1]] },
     },
   },
 }
@@ -172,7 +172,7 @@ const Q2_option2: ToggleBlock = {
     },
 
     events: {
-      on_click: { set: [{ var: "value" }, [2]] },
+      on_click: { "set": [{ var: "value" }, [2]] },
     },
   },
 }
@@ -195,7 +195,7 @@ const Q2_option3: ToggleBlock = {
     },
 
     events: {
-      on_click: { set: [{ var: "value" }, [3]] },
+      on_click: { "set": [{ var: "value" }, [3]] },
     },
   },
 }
@@ -218,7 +218,7 @@ const Q2_option4: ToggleBlock = {
     },
 
     events: {
-      on_click: { set: [{ var: "value" }, [4]] },
+      on_click: { "set": [{ var: "value" }, [4]] },
     },
   },
 }
@@ -271,7 +271,7 @@ const Q2: InteractionUnit = {
       "q1.value": [{
         "if": [
           { "==": [{ var: "q1.value" }, true] },
-          { set: [{ var: "required" }, true] },
+          { "set": [{ ref: "required" }, true] }, // TODO: CHANGE SET SYNTAX SO IT REQUIRES A REF OBJECT
           null,
         ],
       }],
@@ -280,7 +280,7 @@ const Q2: InteractionUnit = {
           { "==": [{ var: "quiz.timer" }, 0] },
           {
             "+=": [
-              { var: "quiz.score" },
+              { ref: "quiz.score" },
               {
                 int: [{ "==": [{ var: "q2.value" }, 1] }],
               },

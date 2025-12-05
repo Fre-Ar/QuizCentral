@@ -69,8 +69,7 @@ export const Toggle: React.FC<ToggleProps> = ({ block }) => {
     else {
       dispatch({ type: "SET_VALUE", id: parentId, value: !isChecked });
     }
-    
-    dispatch({ type: "SET_VISITED", id: parentId });
+    dispatch({ type: "SET_NODE_PROPERTY", id: parentId, property: "visited", value: true });
   }, [isDisabled, parentId, props.events, isChecked, dispatch, engine]);
 
   // 4. Variant Rendering
