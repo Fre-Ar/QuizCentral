@@ -26,10 +26,13 @@ export const Toggle: React.FC<ToggleProps> = ({ block }) => {
   const isChecked = useMemo(() => {
     // A. Priority: Custom Logic (e.g. for Rating Stars: value >= item)
     if (props.state_logic?.active) {
+      const globalState = engine.getStore().getState();
       const context = {
-        globals: engine.getStore().getState().variables,
-        nodes: engine.getStore().getState().nodes
+        globals: globalState.variables,
+        nodes: globalState.nodes,
+        value: state?.value
       };
+
       return LogicEvaluator.getInstance().evaluate(props.state_logic.active, context);
     }
     

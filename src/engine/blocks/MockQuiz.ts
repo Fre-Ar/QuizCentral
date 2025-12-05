@@ -144,7 +144,7 @@ const Q2_option1: ToggleBlock = {
     
     state_logic:{
       active: {
-        "==": [{ var: "value" }, null],
+        "==": [{ var: "value" }, [1]],
       }
     },
 

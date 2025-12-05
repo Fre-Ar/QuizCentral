@@ -100,6 +100,8 @@ export interface EvaluationContext {
   
   // The values of all other nodes (access by ID)
   nodes: Record<RuntimeID, any>;
+
+  value?: any; // The current node's value (for convenience)
 }
 
 // ============================================================================

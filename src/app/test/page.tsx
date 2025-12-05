@@ -4,6 +4,7 @@ import { QuizProvider} from "@/engine/hooks/useQuizContext";
 import { MOCK_SCHEMA, MOCK_USER_STYLES }  from "@/engine/blocks/MockQuiz";
 import { QuizRenderer }  from "@/engine/core/Renderer";
 import Header from '@/components/header';
+import { LogicEvaluator } from "@/engine/core/LogicEvaluator";
 
 export default function TestPage() {
   return (

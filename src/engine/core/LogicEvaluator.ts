@@ -16,6 +16,7 @@ export class LogicEvaluator {
   private constructor() {
     this.customOperators = new Map();
     this.initializeBaseOperators();
+    this.overrideEquality();
   }
 
   public static getInstance(): LogicEvaluator {
@@ -77,7 +78,9 @@ export class LogicEvaluator {
       // Schema says: { "var": "q1.value" }
       // Runtime has: nodes["q1"].value
       // So we expose the nodes map directly.
-      ...ctx.nodes 
+      ...ctx.nodes,
+
+      value: ctx.value 
     };
   }
 
@@ -99,5 +102,45 @@ export class LogicEvaluator {
       if (Array.isArray(a) && a.length === 0) return true;
       return false;
     });
+  }
+
+  /**
+   * Overrides the default "==" operator to support Value Equality for Arrays.
+   * Standard JS "==" checks references for arrays ([1] == [1] is false).
+   * We want [1] == [1] to be true.
+   */
+  private overrideEquality() {
+    // We register a custom function for "==".
+    // JsonLogic checks its internal operation registry before using built-ins.
+    jsonLogic.add_operation("==", (a: any, b: any) => {
+      // 1. Array Value Check
+      if (Array.isArray(a) && Array.isArray(b)) {
+        return this.deepEqual(a, b);
+      }
+      
+      // 2. Standard Loose Equality for everything else
+      // This preserves 1 == "1" behavior if you rely on it.
+      return a == b; 
+    });
+  }
+
+  /**
+   * Recursive Deep Equality Check.
+   * Optimized for Arrays and Primitives.
+   */
+  private deepEqual(a: any, b: any): boolean {
+    if (a === b) return true; // Identical references or primitives
+
+    if (Array.isArray(a) && Array.isArray(b)) {
+      if (a.length !== b.length) return false;
+      for (let i = 0; i < a.length; i++) {
+        if (!this.deepEqual(a[i], b[i])) return false;
+      }
+      return true;
+    }
+
+    // TODO: Add Object support here if your schema compares objects.
+    // For MVP/Arrays, we stop here to save perf.
+    return false;
   }
 }

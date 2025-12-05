@@ -58,9 +58,11 @@ export const TriggerButton: React.FC<TriggerButtonProps> = ({ block }) => {
       
       // A.1 Resolve Value
       // We need the current engine context to evaluate the value expression
+      const globalState = engine.getStore().getState();
       const context = {
-        globals: engine.getStore().getState().variables,
-        nodes: engine.getStore().getState().nodes
+        globals: globalState.variables,
+        nodes: globalState.nodes,
+        value: state?.value
       };
       const resolvedValue = LogicEvaluator.getInstance().evaluate(valueExpr, context);
 
