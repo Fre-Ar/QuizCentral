@@ -6,6 +6,9 @@ import { InteractionProvider } from "../hooks/useInteractionContext";
 // Atoms
 import { TextInput } from "./atoms/TextInput";
 import { TriggerButton } from "./atoms/TriggerButton";
+import { Toggle } from "./atoms/Toggle";
+import { Slider } from "./atoms/Slider";
+import { Select } from "./atoms/Select";
 import { TextBlock } from "./atoms/TextBlock";
 import { Divider } from "./atoms/Divider";
 import { ImageBlock } from "./atoms/ImageBlock";
@@ -63,8 +66,13 @@ export const BlockFactory = memo(({ block }: BlockFactoryProps) => {
       return <TextInput block={block} />;
     case "trigger":
       return <TriggerButton block={block} />;
-    
-    // TODO: Add Toggle, Slider, Select
+
+    case "toggle":
+      return <Toggle block={block} />;
+    case "slider":
+      return <Slider block={block} />;
+    case "select":
+      return <Select block={block} />;
     
     default:
       console.warn(`Unknown block type: ${(block as any).type}`);

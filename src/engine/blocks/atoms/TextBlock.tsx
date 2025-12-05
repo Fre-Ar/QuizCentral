@@ -14,6 +14,7 @@ export const TextBlock: React.FC<TextBlockProps> = ({ block }) => {
   
   // 2. Base Typography
   // We apply some defaults to ensure it looks like text if no classes are passed
+  console.log("Rendering TextBlock with style:", className);
   const baseClasses = `prose max-w-none ${className}`;
 
   return (
