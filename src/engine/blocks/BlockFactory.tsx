@@ -30,6 +30,8 @@ export const BlockFactory = memo(({ block }: BlockFactoryProps) => {
   // Only blocks with IDs can be hidden by the Engine.
   // We hook into the state; if the node doesn't exist, we assume it's static/visible.
   const state = useBlockState(block.id || "");
+  console.log("Block:", block.id, "Type:", block.type);
+  console.log("State", state);
   
   if (state?.computed.hidden) {
     return null; 

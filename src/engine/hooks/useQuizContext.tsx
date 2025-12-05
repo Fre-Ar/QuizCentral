@@ -1,25 +1,31 @@
 import React, { createContext, useContext, useEffect, useRef, useState } from "react";
 import { QuizEngine } from "../core/QuizEngine";
-import { QuizSchema } from "../types/schema";
+import { QuizSchema, StyleRegistry } from "../types/schema";
 
 interface QuizContextValue {
   engine: QuizEngine;
+  styleRegistry: StyleRegistry;
 }
 
 const QuizContext = createContext<QuizContextValue | null>(null);
 
 interface QuizProviderProps {
   schema: QuizSchema;
+  // TODO:  Make this come from useUser().styleRegistry
+  registry?: StyleRegistry;
   children: React.ReactNode;
 }
 
-export const QuizProvider: React.FC<QuizProviderProps> = ({ schema, children }) => {
+export const QuizProvider: React.FC<QuizProviderProps> = ({ schema, registry, children }) => {
   // Use a ref to store the engine instance so it survives re-renders without being recreated.
   // We cannot use useMemo for side-effects like initializing the engine (React strict mode constraints).
   const engineRef = useRef<QuizEngine | null>(null);
   
   // We use a dummy state to force a re-render once the engine is ready
   const [isReady, setIsReady] = useState(false);
+
+  // Default empty registry if none provided
+  const safeRegistry = registry || new Map();
 
   if (!engineRef.current) {
     engineRef.current = new QuizEngine(schema);
@@ -38,7 +44,7 @@ export const QuizProvider: React.FC<QuizProviderProps> = ({ schema, children }) 
   }
 
   return (
-    <QuizContext.Provider value={{ engine: engineRef.current }}>
+    <QuizContext.Provider value={{ engine: engineRef.current, styleRegistry: safeRegistry }}>
       {children}
     </QuizContext.Provider>
   );

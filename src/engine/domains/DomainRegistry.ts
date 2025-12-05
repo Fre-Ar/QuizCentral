@@ -50,6 +50,12 @@ export class DomainRegistry {
     if (domainId === "$$STRING") return typeof value === "string";
     if (domainId === "$$BOOL") return typeof value === "boolean";
 
+    // TODO: REMOVE THIS HOTFIX (allowed domainIds to be arrays when that's a bad way to handle this)
+    if (Array.isArray(domainId)) {
+      // Array Domain: value must be in the array
+      return domainId.includes(value);
+    }
+
     const def = this.definitions.get(domainId);
     if (!def) {
       console.warn(`Validation failed: Unknown Domain ${domainId}`);
@@ -297,7 +303,7 @@ export class DomainRegistry {
     // 2. Load Definition
     const def = this.definitions.get(domainId);
     if (!def) {
-      if (DomainRegistry.PRIMITIVES.has(domainId)) {
+      if (DomainRegistry.PRIMITIVES.has(domainId as string)) {
         throw new Error(`Cannot generate infinite primitive domain: ${domainId}`);
       }
       throw new Error(`Domain not found: ${domainId}`);

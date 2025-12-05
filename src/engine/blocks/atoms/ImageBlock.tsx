@@ -1,6 +1,6 @@
 import React from "react";
 import { ImageBlock as ImageBlockSchema } from "../../types/schema";
-import { StyleResolver } from "../../styles/StyleResolver";
+import { useStyleResolver } from "@/engine/hooks/useStyleResolver";
 
 interface ImageBlockProps {
   block: ImageBlockSchema;
@@ -10,7 +10,7 @@ export const ImageBlock: React.FC<ImageBlockProps> = ({ block }) => {
   const { props } = block;
 
   // 1. Resolve Styles
-  const { className, style } = StyleResolver.resolve(props.styling);
+  const { className, style } = useStyleResolver(props.styling);
 
   // 2. Aspect Ratio Logic
   // Maps schema aspect strings to Tailwind classes

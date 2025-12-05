@@ -4,7 +4,7 @@ import { useInteractionContext } from "../../hooks/useInteractionContext";
 import { useBlockState } from "../../hooks/useBlockState";
 import { useQuizEngine } from "../../hooks/useQuizEngine";
 import { LogicEvaluator } from "../../core/LogicEvaluator";
-import { StyleResolver } from "../../styles/StyleResolver";
+import { useStyleResolver } from "@/engine/hooks/useStyleResolver";
 
 interface ToggleProps {
   block: ToggleBlock;
@@ -19,7 +19,7 @@ export const Toggle: React.FC<ToggleProps> = ({ block }) => {
   const state = useBlockState(parentId || "");
 
   // 1. Resolve Styles
-  const { className, style } = StyleResolver.resolve(props.styling);
+  const { className, style } = useStyleResolver(props.styling);
 
   // 2. Computed "Checked" State
   // The engine doesn't auto-compute 'active' for us, so we calculate it here.

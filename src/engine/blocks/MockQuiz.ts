@@ -1,11 +1,10 @@
-import { QuizSchema, PageNode, InteractionUnit, ContainerBlock, TextBlock, TriggerBlock, ToggleBlock, StyleSchema, StyleProperties } from "@/engine/types/schema";
+import { QuizSchema, PageNode, InteractionUnit, ContainerBlock, TextBlock, TriggerBlock, ToggleBlock, StyleSchema, StyleProperties, StyleRegistry } from "@/engine/types/schema";
 
 // ==========
 // Styles
 // ==========
 
 const TEXT_STYLE_PROPS: StyleProperties = {
-  text_color: "#000000",
   font_size: "base",
   font_weight: "bold"
 };
@@ -42,6 +41,16 @@ const WHITE_TXT_STYLE: StyleSchema = {
   properties: WHITE_TXT_STYLE_PROPS
 };
 
+const STYLES = [
+  TEXT_STYLE,
+  CONTAINER_STYLE,
+  GREEN_BG_STYLE,
+  WHITE_TXT_STYLE,
+];
+
+export const MOCK_USER_STYLES: StyleRegistry = new Map(
+  STYLES.map((style) => [style.id, style.properties])
+);
 
 
 
@@ -101,7 +110,8 @@ const Q1: InteractionUnit = {
     domain_id: "$$BOOL",
 
     state: {
-        value: null,
+      // TODO: CAREFUL WITH DEFAULT VALUES, NULL DOES NOT TRIGGER SAME LOGIC AS FALSE, FIX
+        value: false,
         visited: false,
         required: true,
     },
@@ -131,6 +141,12 @@ const Q2_option1: ToggleBlock = {
     label_position: "end",
 
     styling: { classes: ["green_bg", "white_text"] },
+    
+    state_logic:{
+      active: {
+        "==": [{ var: "value" }, null],
+      }
+    },
 
     events: {
       on_click: { set: [{ var: "value" }, [1]] },
@@ -148,6 +164,12 @@ const Q2_option2: ToggleBlock = {
     label_position: "end",
 
     styling: { classes: ["green_bg", "white_text"] },
+    
+    state_logic:{
+      active: {
+        "==": [{ var: "value" }, [2]],
+      }
+    },
 
     events: {
       on_click: { set: [{ var: "value" }, [2]] },
@@ -166,6 +188,12 @@ const Q2_option3: ToggleBlock = {
 
     styling: { classes: ["green_bg", "white_text"] },
 
+    state_logic:{
+      active: {
+        "==": [{ var: "value" }, [3]],
+      }
+    },
+
     events: {
       on_click: { set: [{ var: "value" }, [3]] },
     },
@@ -182,6 +210,12 @@ const Q2_option4: ToggleBlock = {
     label_position: "end",
 
     styling: { classes: ["green_bg", "white_text"] },
+
+    state_logic:{
+      active: {
+        "==": [{ var: "value" }, [4]],
+      }
+    },
 
     events: {
       on_click: { set: [{ var: "value" }, [4]] },

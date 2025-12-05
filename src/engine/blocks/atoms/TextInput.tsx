@@ -3,7 +3,7 @@ import { InputBlock } from "../../types/schema";
 import { useInteractionContext } from "../../hooks/useInteractionContext";
 import { useBlockState } from "../../hooks/useBlockState";
 import { useQuizEngine } from "../../hooks/useQuizEngine";
-import { StyleResolver } from "../../styles/StyleResolver";
+import { useStyleResolver } from "@/engine/hooks/useStyleResolver";
 
 interface TextInputProps {
   block: InputBlock;
@@ -22,7 +22,7 @@ export const TextInput: React.FC<TextInputProps> = ({ block }) => {
   const { dispatch } = useQuizEngine();
 
   // 3. Style Resolution
-  const { className, style } = StyleResolver.resolve(props.styling);
+  const { className, style } = useStyleResolver(props.styling);
   const baseClasses = `w-full px-3 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors resize-none ${className}`;
 
   // 4. Computed Properties

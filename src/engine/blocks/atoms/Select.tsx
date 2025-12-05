@@ -3,7 +3,7 @@ import { SelectBlock, InteractionUnit } from "../../types/schema";
 import { useInteractionContext } from "../../hooks/useInteractionContext";
 import { useBlockState } from "../../hooks/useBlockState";
 import { useQuizEngine } from "../../hooks/useQuizEngine";
-import { StyleResolver } from "../../styles/StyleResolver";
+import { useStyleResolver } from "@/engine/hooks/useStyleResolver";
 import { DomainRegistry } from "../../domains/DomainRegistry";
 import { QuizEngine } from "@/engine/core/QuizEngine";
 
@@ -38,7 +38,7 @@ export const Select: React.FC<SelectProps> = ({ block }) => {
   }, [engine, parentId]);
 
   // 2. Resolve Styles
-  const { className, style } = StyleResolver.resolve(props.styling);
+  const { className, style } = useStyleResolver(props.styling);
   const isDisabled = state?.computed.disabled || props.disabled;
   const currentValue = state?.value;
 

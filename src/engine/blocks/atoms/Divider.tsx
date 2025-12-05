@@ -1,6 +1,6 @@
 import React from "react";
 import { DividerBlock } from "../../types/schema";
-import { StyleResolver } from "../../styles/StyleResolver";
+import { useStyleResolver } from "@/engine/hooks/useStyleResolver";
 
 interface DividerProps {
   block: DividerBlock;
@@ -10,7 +10,7 @@ export const Divider: React.FC<DividerProps> = ({ block }) => {
   const { props } = block;
 
   // 1. Resolve Styles
-  const { className, style } = StyleResolver.resolve(props.styling);
+  const { className, style } = useStyleResolver(props.styling);
 
   // 2. Base Classes
   // We use a semantic <hr> tag.

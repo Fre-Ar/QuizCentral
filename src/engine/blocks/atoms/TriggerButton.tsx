@@ -3,7 +3,7 @@ import { TriggerBlock } from "../../types/schema";
 import { useInteractionContext } from "../../hooks/useInteractionContext";
 import { useQuizEngine } from "../../hooks/useQuizEngine";
 import { useBlockState } from "../../hooks/useBlockState";
-import { StyleResolver } from "../../styles/StyleResolver";
+import { useStyleResolver } from "@/engine/hooks/useStyleResolver";
 import { LogicEvaluator } from "../../core/LogicEvaluator";
 
 interface TriggerButtonProps {
@@ -19,7 +19,7 @@ export const TriggerButton: React.FC<TriggerButtonProps> = ({ block }) => {
   const state = useBlockState(parentId || "");
 
   // 1. Resolve Styles
-  const { className, style } = StyleResolver.resolve(props.styling);
+  const { className, style } = useStyleResolver(props.styling);
   
   // 2. Computed State
   const isDisabled = state?.computed.disabled || props.disabled;

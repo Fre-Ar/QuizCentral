@@ -30,6 +30,7 @@ export type InteractionState = {
 // 2. DOMAIN SCHEMA (Data Modeling)
 // ============================================================================
 
+// TODO: MAKE IT SO DomainID HAS TO BE A STRING BUT THERE'S A DIFFERENT WAY TO PASS IN AN ARRAY
 export type DomainID = string | Array<any>;
 
 export interface DomainDefinition {
@@ -150,6 +151,8 @@ export interface StylingProps {
   classes: StyleID[];
   overrides?: Partial<StyleProperties>;
 }
+
+export type StyleRegistry = Map<string, StyleProperties>;
 
 // ============================================================================
 // 4. BLOCK SCHEMA (The UI Tree)

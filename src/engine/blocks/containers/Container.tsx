@@ -1,6 +1,6 @@
 import React from "react";
 import { ContainerBlock } from "../../types/schema";
-import { StyleResolver } from "../../styles/StyleResolver";
+import { useStyleResolver } from "@/engine/hooks/useStyleResolver";
 import { BlockFactory } from "../BlockFactory";
 
 interface ContainerProps {
@@ -11,7 +11,7 @@ interface ContainerProps {
 export const Container: React.FC<ContainerProps> = ({ block }) => {
   // 1. Resolve Styles
   // We resolve the styling props directly into Tailwind classes and inline styles
-  const { className, style } = StyleResolver.resolve(block.props.styling);
+  const { className, style } = useStyleResolver(block.props.styling);
 
   // 2. Default Layout Classes
   // If the user didn't specify display type, we default to a vertical flex column

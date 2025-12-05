@@ -3,7 +3,7 @@ import { SliderBlock } from "../../types/schema";
 import { useInteractionContext } from "../../hooks/useInteractionContext";
 import { useBlockState } from "../../hooks/useBlockState";
 import { useQuizEngine } from "../../hooks/useQuizEngine";
-import { StyleResolver } from "../../styles/StyleResolver";
+import { useStyleResolver } from "@/engine/hooks/useStyleResolver";
 
 interface SliderProps {
   block: SliderBlock;
@@ -16,7 +16,7 @@ export const Slider: React.FC<SliderProps> = ({ block }) => {
   const state = useBlockState(parentId || "");
 
   // 1. Resolve Styles
-  const { className, style } = StyleResolver.resolve(props.styling);
+  const { className, style } = useStyleResolver(props.styling);
 
   // 2. State Management
   // We need local state for the "drag" effect to be smooth, 
