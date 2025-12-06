@@ -64,24 +64,41 @@ export class LogicEvaluator {
    * This is critical because our Runtime State is normalized (flat), 
    * but the Schema refers to things hierarchically or via shortcuts.
    */
-  private createDataProxy(ctx: EvaluationContext): any {
-    return {
-      // We rely on json-logic's default "var" behavior accessing properties of this object.
-      // However, since we want flexible lookups, we might need to pre-compute or use a getter.
-      // json-logic-js is synchronous and simple. It expects a plain JS object.
-      // We will flatten the context for the evaluator.
-      
-      ...ctx.globals,       // Expose globals directly: "quiz.timer"
-      
-      // For Nodes, we map them by ID.
-      // The context.nodes is already Record<ID, State>.
-      // Schema says: { "var": "q1.value" }
-      // Runtime has: nodes["q1"].value
-      // So we expose the nodes map directly.
-      ...ctx.nodes,
+  private createDataProxy(context: EvaluationContext): any {
+    const { globals, nodes, ...locals } = context;
 
-      value: ctx.value 
+    // Unflatten globals so "quiz.timer" becomes { quiz: { timer: val } }
+    // This allows JsonLogic {"var": "quiz.timer"} to work.
+    const nestedGlobals = this.unflatten(globals || {});
+    const dataProxy = {
+      ...nestedGlobals,
+      ...(nodes || {}),
+      ...locals
     };
+    return dataProxy;
+  }
+
+  /**
+   * Helper to convert flat dot-notation keys to nested objects.
+   * { "quiz.timer": 10 } -> { quiz: { timer: 10 } }
+   */
+  private unflatten(data: Record<string, any>): Record<string, any> {
+    const result: any = {};
+    for (const key in data) {
+      if (key.includes('.')) {
+        const parts = key.split('.');
+        let current = result;
+        for (let i = 0; i < parts.length - 1; i++) {
+          const part = parts[i];
+          if (!current[part]) current[part] = {};
+          current = current[part];
+        }
+        current[parts[parts.length - 1]] = data[key];
+      } else {
+        result[key] = data[key];
+      }
+    }
+    return result;
   }
 
   /**
@@ -89,18 +106,40 @@ export class LogicEvaluator {
    */
   private initializeBaseOperators() {
     
-    // Example: String Length
+    // String Length
     this.registerOperator("len", (a: any) => {
       if (typeof a === "string" || Array.isArray(a)) return a.length;
       return 0;
     });
 
-    // Example: Empty check
+    // Empty check
     this.registerOperator("is_empty", (a: any) => {
       if (a === null || a === undefined) return true;
       if (typeof a === "string" && a.trim() === "") return true;
       if (Array.isArray(a) && a.length === 0) return true;
       return false;
+    });
+
+    // Convert to integer
+    this.registerOperator("int", (a: any) => {
+      if (a === null || a === undefined) return 0;
+
+      if (typeof a === "number") {
+        // Ensure integer (e.g., 3.7 -> 3)
+        return Math.trunc(a);
+      }
+
+      if (typeof a === "boolean") {
+        return a ? 1 : 0;
+      }
+
+      if (typeof a === "string") {
+        const parsed = parseInt(a, 10);
+        return isNaN(parsed) ? 0 : parsed;
+      }
+
+      // Fallback to null if impossible
+      return null;
     });
 
     // REFERENCE OPERATOR

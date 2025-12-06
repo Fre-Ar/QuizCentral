@@ -282,9 +282,7 @@ const Q2: InteractionUnit = {
           {
             "+=": [
               { ref: "quiz.score" },
-              {
-                int: [{ "==": [{ var: "q2.value" }, 1] }],
-              },
+              { int: [ { "==": [ { "var": "q2.value" }, 1 ] } ] },
             ],
           },
           null,
@@ -496,6 +494,14 @@ const Q4_TRIGGER: TriggerBlock = {
   },
 }
 
+const Q4_LABEL: TextBlock = {
+  type: "text",
+  props: {
+    content: "0",
+    styling: { classes: ["text_style_id"] },
+  }
+};
+
 const Q4_VIEW: ContainerBlock = {
   type: "container",
   props: {
@@ -505,7 +511,7 @@ const Q4_VIEW: ContainerBlock = {
     },
     styling: { classes: [] }, // default styles
 
-    children: [ Q4_TEXT, Q4_TRIGGER ],
+    children: [ Q4_TEXT, Q4_TRIGGER, Q4_LABEL ],
   },
 }
 
@@ -541,7 +547,7 @@ export const MOCK_SCHEMA: QuizSchema = {
   },
 
   config: {
-    time_limit_seconds: 20 * 60,
+    time_limit_seconds: 10,
     navigation_mode: "free",
   },
 

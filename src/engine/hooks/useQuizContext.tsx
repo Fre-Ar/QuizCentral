@@ -27,17 +27,25 @@ export const QuizProvider: React.FC<QuizProviderProps> = ({ schema, registry, ch
   // Default empty registry if none provided
   const safeRegistry = registry || new Map();
 
+  // 1. Instantiation (Run once)
   if (!engineRef.current) {
     engineRef.current = new QuizEngine(schema);
     setIsReady(true);
   }
 
-  // Cleanup on unmount (optional, depending on if Engine holds resources like timers)
+  // 2. Lifecycle Binding (Run on Mount/Unmount)
   useEffect(() => {
+    const engine = engineRef.current;
+    if (engine) {
+      engine.mount(); // Start timers/listeners
+    }
+
     return () => {
-      // engineRef.current?.dispose(); // If we add cleanup logic later
+      if (engine) {
+        engine.unmount(); // Pause timers/listeners
+      }
     };
-  }, []);
+  }, []); // Empty dependency array = Run once on mount
 
   if (!isReady || !engineRef.current) {
     return null; // Or a loading spinner

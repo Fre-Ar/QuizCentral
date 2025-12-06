@@ -23,23 +23,53 @@ export class QuizEngine {
   // Schema Lookup Map (Optimization for O(1) access during runtime)
   private schemaMap: Map<string, InteractionUnit | VisualBlock> = new Map();
 
+  // quiz.timer interval 
+  private timerInterval: NodeJS.Timeout | null = null;
+  // Listeners" Maps a trigger key (e.g. "quiz.timer", "q1.value") to the List of Blocks listening to it.
+  private listenerIndex: Map<string, string[]> = new Map();
+
   constructor(schema: QuizSchema) {
     this.schema = schema;
     this.evaluator = LogicEvaluator.getInstance();
     this.domainRegistry = DomainRegistry.getInstance();
-    
-    // 1. Index Schema (Builds the schemaMap)
-    this.indexSchema(schema);
+  
 
-    // 2. Normalize (Generate IDs for everything FIRST)
+    // 1. Normalize (Generate IDs for everything FIRST)
     this.normalizeIds(this.schema);
 
-    // 3. Hydrate Initial State
+    // 2. Build the Listener Index (Performance Guardrail)
+    this.indexListeners(this.schema);
+
+    // 3. Index Schema (Builds the schemaMap)
+    this.indexSchema(schema);
+
+    // 4. Hydrate Initial State
     const initialState = this.hydrateState(schema);
+    // Initialize Timer Variable
+    if (schema.config.time_limit_seconds) {
+      initialState.variables["quiz.timer"] = schema.config.time_limit_seconds;
+    }
     this.store = new StateStore(initialState);
     
-    // 4. Initial Computation (Resolve initial visibility/logic)
+    // 5. Initial Computation (Resolve initial visibility/logic)
     this.recalculateDerivedState();
+  }
+
+  // Explicit Lifecycle Methods
+  public mount() {
+    if (this.schema.config.time_limit_seconds && !this.timerInterval) {
+      console.log("[QuizEngine] Mounting: Timer Started");
+      this.startTimer();
+    }
+  }
+
+  // Cleanup
+  public unmount() {
+    console.log("[QuizEngine] Unmounting: Timer Stopped");
+    if (this.timerInterval) {
+      clearInterval(this.timerInterval);
+      this.timerInterval = null;
+    }
   }
 
   public getStore(): StateStore {
@@ -163,10 +193,14 @@ export class QuizEngine {
   // INITIALIZATION (Hydration & Indexing)
   // ==========================================================================
 
-  private indexSchema(schema: QuizSchema) {
+  private normalizeIds(schema: QuizSchema) {
     const visit = (block: InteractionUnit | VisualBlock) => {
-      if (block.id) this.schemaMap.set(block.id, block);
-      
+      // Generate ID if missing
+      if (!block.id) {
+        block.id = `gen_${Math.random().toString(36).substr(2, 9)}`;
+      }
+
+      // Recurse
       if (block.type === "interaction_unit") {
         visit((block as InteractionUnit).view);
       } else if (block.type === "container") {
@@ -177,14 +211,30 @@ export class QuizEngine {
     schema.pages.forEach(p => p.blocks.forEach(visit));
   }
 
-  private normalizeIds(schema: QuizSchema) {
+  private indexListeners(schema: QuizSchema) {
     const visit = (block: InteractionUnit | VisualBlock) => {
-      // Generate ID if missing
-      if (!block.id) {
-        block.id = `gen_${Math.random().toString(36).substr(2, 9)}`;
+      if (block.type === "interaction_unit") {
+        const iu = block as InteractionUnit;
+        if (iu.behavior?.listeners) {
+          // Map every trigger key to this block ID
+          Object.keys(iu.behavior.listeners).forEach(triggerKey => {
+            const list = this.listenerIndex.get(triggerKey) || [];
+            list.push(iu.id);
+            this.listenerIndex.set(triggerKey, list);
+          });
+        }
+        visit(iu.view);
+      } else if (block.type === "container") {
+        (block as ContainerBlock).props.children.forEach(visit);
       }
+    };
+    schema.pages.forEach(p => p.blocks.forEach(visit));
+  }
 
-      // Recurse
+  private indexSchema(schema: QuizSchema) {
+    const visit = (block: InteractionUnit | VisualBlock) => {
+      if (block.id) this.schemaMap.set(block.id, block);
+      
       if (block.type === "interaction_unit") {
         visit((block as InteractionUnit).view);
       } else if (block.type === "container") {
@@ -279,7 +329,17 @@ export class QuizEngine {
   private processListeners(triggerKey: string, newValue: any): EngineAction[] {
     const state = this.store.getState();
     const effects: EngineAction[] = [];
+
+    // 1. OPTIMIZATION CHECK
+    // If no blocks care about this trigger, exit immediately.
+    const listeningBlockIds = this.listenerIndex.get(triggerKey);
+    if (!listeningBlockIds || listeningBlockIds.length === 0) {
+      return [];
+    }
+
+    logTest("The following blocks care about", triggerKey, ":", ...listeningBlockIds)
     
+    // 2. CONTEXT
     // Build context for evaluation
     const context: EvaluationContext = {
       globals: state.variables,
@@ -290,42 +350,32 @@ export class QuizEngine {
       context.nodes[n.id] = { value: n.value, ...n.computed };
     });
 
-    // Iterate ALL blocks to find listeners
-    // Optimization: In prod, pre-index listeners by triggerKey
-    this.schemaMap.forEach((block, id) => {
-      if (block.type !== "interaction_unit") return;
-      const iu = block as InteractionUnit;
-      
-      const listeners = iu.behavior?.listeners;
-      logTest("Processing listeners for block:", id, "Listeners:", listeners, "for triggerKey:", triggerKey);
-      if (!listeners || !listeners[triggerKey]) return;
+    // 3. TARGETED ITERATION
+    // Only iterate the specific blocks that are listening
+    listeningBlockIds.forEach(id => {
+      const block = this.schemaMap.get(id) as InteractionUnit; // We know it's an IU from indexing
+      if (!block) return;
 
-      const logicChain = listeners[triggerKey];
-      // logicChain is an array of expressions (steps) or a single expression
-      // The schema implies: "if": [ condition, action, else ]
-      // We evaluate the WHOLE thing. The return value should be the Action Description.
-      
-      // We assume logicChain is an "if" that returns an Action Object, e.g. {"set": ...}
-      // However, LogicEvaluator returns the RESULT of operations. 
-      // We need to interpret the "set" operator as returning an Action Descriptor, not performing it.
-      
-      // HACK for MVP: We use the LogicEvaluator, but we need 'set' to return data, not void.
-      // Standard JsonLogic 'set' doesn't exist. We must rely on our evaluator returning the struct.
-      // IF logicChain contains "set", we assume the schema intention is side-effect.
-      
-      const result = this.evaluator.evaluate(logicChain as any, context);
+      const logicChain = block.behavior?.listeners?.[triggerKey];
+      if (!logicChain) return;
 
-      logTest("Listener evaluation result for block", id, ":", result);
+      logTest(id, "goes ahead with logic eval under the context", context)
 
-      if (result && Array.isArray(result)) {
-        logTest("It's an array!")
-        result.forEach((res: any) =>
-        this.handleEffectResult(res, id, effects));
-      }
-      
-      if (result && typeof result === "object") {
-        this.handleEffectResult(result, id, effects);
-      }
+      const veridict = this.evaluator.evaluate(
+        { var: "quiz.score" }
+      , context);
+      logTest('veridict:', veridict);
+
+      const rawResult = this.evaluator.evaluate(logicChain as any, context);
+      const results = Array.isArray(rawResult) ? rawResult : [rawResult];
+
+      logTest("Listener evaluation results for block", id, ":", results);
+
+      results.forEach(result => {
+        if (result && typeof result === "object") {
+           this.handleEffectResult(result, id, effects);
+        }
+      });
     });
 
     return effects;
@@ -516,16 +566,6 @@ export class QuizEngine {
       const schemaBlock = this.schemaMap.get(node.schemaId);
       if (!schemaBlock) return;
 
-      // --- DEBUGGING START ---
-      // We are looking specifically for the Trigger
-      if (node.id === "trigger_001") {
-         logTest(`[DEBUG Trigger] ID: ${node.id}, ScopeID: ${node.scopeId}`);
-         if (node.scopeId) {
-            logTest(`[DEBUG Trigger] Parent Value:`, nodes[node.scopeId]?.value);
-         }
-      }
-      // --- DEBUGGING END ---
-
       // RESOLVE THE LOCAL VALUE
       // If I have a Scope (Parent IU), use its value.
       // If not (I am the IU), use my own value.
@@ -540,12 +580,6 @@ export class QuizEngine {
         ...context, 
         value: contextValue
       };
-
-      // --- DEBUGGING START ---
-      if (node.id === "trigger_001") {
-         logTest(`[DEBUG Trigger] Local Context Value:`, localContext.value);
-      }
-      // --- DEBUGGING END ---
 
       let isHidden = node.computed.hidden;
       let isDisabled = node.computed.disabled;
@@ -571,14 +605,7 @@ export class QuizEngine {
                isHidden = this.evaluator.evaluate(sl.hidden, localContext);
             }
             if (sl.disabled) {
-              const result = this.evaluator.evaluate(sl.disabled, localContext);
-              // --- DEBUGGING START ---
-               if (node.id === "trigger_001") {
-                  logTest(`[DEBUG Trigger] Evaluated Logic:`, JSON.stringify(sl.disabled));
-                  logTest(`[DEBUG Trigger] Result:`, result);
-               }
-               // --- DEBUGGING END ---
-              isDisabled = result;
+              isDisabled = this.evaluator.evaluate(sl.disabled, localContext);
             }
          }
       }
@@ -668,6 +695,60 @@ export class QuizEngine {
 
     // 4. Dispatch All Resulting Effects
     effects.forEach(effect => this.dispatch(effect));
+  }
+
+  // ==========================================================================
+  // TIMER LOGIC
+  // ==========================================================================
+
+  private startTimer() {
+    this.timerInterval = setInterval(() => {
+      this.handleTick();
+    }, 1000);
+  }
+
+  private handleTick() {
+    const state = this.store.getState();
+    const currentBuffer = state.variables["quiz.timer"];
+
+    // Safety check
+    if (typeof currentBuffer !== "number") return;
+
+    if (currentBuffer <= 0) {
+      // Timer finished. Ensure we clamp to 0 and stop ticking.
+      if (this.timerInterval) clearInterval(this.timerInterval);
+      return;
+    }
+
+    const newValue = currentBuffer - 1;
+
+    // 1. Update the Store (Low Cost)
+    // We update variables directly.
+    // React components subscribed specifically to 'quiz.timer' will re-render.
+    // Others will not (if using proper selectors).
+    const nextState = {
+      ...state,
+      variables: { ...state.variables, "quiz.timer": newValue }
+    };
+    
+    // We commit this update immediately so the UI clock ticks smoothly
+    this.store.setState(nextState);
+
+    // 2. Check Listeners (Optimized O(1) Lookup)
+    // We only run logic if a block explicitly registered a listener for "quiz.timer"
+    logTest("new Quiz Time:", newValue)
+    const sideEffects = this.processListeners("quiz.timer", newValue);
+    
+    if (sideEffects.length > 0) {
+      sideEffects.forEach(effect => this.dispatch(effect));
+    }
+
+    // 3. Recalculate Derived State?
+    // Optimize: In a perfect world, we check a dependency graph.
+    // For MVP: We run it. Why? Because a block might have hidden logic: 
+    // "hidden": { "==": [{"var": "quiz.timer"}, 30] } (Show a warning at 30s)
+    // Since listeners are handled separately, this loop handles visibility/disabled states.
+    this.recalculateDerivedState(); 
   }
 }
 
