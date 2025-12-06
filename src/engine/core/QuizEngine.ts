@@ -87,7 +87,7 @@ export class QuizEngine {
   /**
    * The Entry Point for all User Interactions.
    */
-  public dispatch(action: EngineAction) {
+  public dispatch(action: EngineAction, options?: { skipRecalc?: boolean }) {
     const currentState = this.store.getState();
     let nextState = { ...currentState }; // Shallow copy root
     let hasChanges = false;
@@ -121,14 +121,9 @@ export class QuizEngine {
 
         // 3. Process Listeners (Side Effects)
         // e.g. "q1.value" changed -> Run "q2" listeners
+        this.processListeners(`${action.id}.value`, action.value);
+        // e.g. "q1.value" changed -> Run "q2" listeners
         const sideEffects = this.processListeners(`${action.id}.value`, action.value);
-        if (sideEffects.length > 0) {
-           // If listeners caused MORE changes, we dispatch them recursively or apply them here.
-           // For simplicity, we apply them to the *current* nextState reference if possible, 
-           // but since we already committed, we should just let the recursion handle it via dispatch.
-           sideEffects.forEach(effect => this.dispatch(effect));
-           return; // dispatch will handle the subsequent recalculation
-        }
         break;
       }
 
@@ -184,8 +179,12 @@ export class QuizEngine {
 
     if (hasChanges) {
       this.store.setState(nextState);
-      // Trigger the cascade: Logic might change visibility based on new values
-      this.recalculateDerivedState();
+
+      // ONLY recalculate if not skipped
+      if (!options?.skipRecalc) {
+         // Trigger the cascade: Logic might change visibility based on new values
+        this.recalculateDerivedState();
+      }
     }
   }
 
@@ -336,31 +335,19 @@ export class QuizEngine {
   // LISTENER PROCESSING 
   // ==========================================================================
 
-  private processListeners(triggerKey: string, newValue: any): EngineAction[] {
+  private processListeners(triggerKey: string, newValue: any): void {
     const state = this.store.getState();
-    const effects: EngineAction[] = [];
 
     // 1. OPTIMIZATION CHECK
     // If no blocks care about this trigger, exit immediately.
     const listeningBlockIds = this.listenerIndex.get(triggerKey);
     if (!listeningBlockIds || listeningBlockIds.length === 0) {
-      return [];
+      return;
     }
 
     logTest("The following blocks care about", triggerKey, ":", ...listeningBlockIds)
     
-    // 2. CONTEXT
-    // Build context for evaluation
-    const context: EvaluationContext = {
-      globals: state.variables,
-      nodes: {},
-      ...{ [triggerKey]: newValue } // Inject the change that just happened
-    };
-    Object.values(state.nodes).forEach(n => {
-      context.nodes[n.id] = { value: n.value, ...n.computed };
-    });
-
-    // 3. TARGETED ITERATION
+    // 2. TARGETED ITERATION
     // Only iterate the specific blocks that are listening
     listeningBlockIds.forEach(id => {
       const block = this.schemaMap.get(id) as InteractionUnit; // We know it's an IU from indexing
@@ -369,7 +356,22 @@ export class QuizEngine {
       const logicChain = block.behavior?.listeners?.[triggerKey];
       if (!logicChain) return;
 
-      logTest(id, "goes ahead with logic eval under the context", context)
+      // RE-READ STATE inside the loop: We get the latest state (possibly modified by previous listener).
+      const currentState = this.store.getState();
+      
+      // Build Context for evaluation
+      const context: EvaluationContext = {
+        globals: currentState.variables,
+        nodes: {},
+        ...{ [triggerKey]: newValue }, // Inject the change that just happened
+        // Inject Self Value
+        value: currentState.nodes[id]?.value ?? null
+      };
+
+      // Map nodes (Optimization: You could incrementally update this, but re-mapping is safer)
+      Object.values(currentState.nodes).forEach(n => {
+        context.nodes[n.id] = { value: n.value, ...n.computed };
+      });
 
       const node = state.nodes[id];
       // resolve the local value
@@ -384,10 +386,12 @@ export class QuizEngine {
         value: contextValue
       };
 
+      logTest(id, "goes ahead with logic eval under the context", localContext)
+
       const veridict = this.evaluator.evaluate(
         {var: 'value'}
       , localContext);
-      logTest('veridict:', veridict);
+      logTest('[Veridict Value]:', veridict);
 
       const rawResult = this.evaluator.evaluate(logicChain as any, localContext);
       const results = Array.isArray(rawResult) ? rawResult : [rawResult];
@@ -396,12 +400,16 @@ export class QuizEngine {
 
       results.forEach(result => {
         if (result && typeof result === "object") {
+          // We create a temporary array to capture the effect from the helper
+           const effects: EngineAction[] = [];
            this.handleEffectResult(result, id, effects);
+           
+           // EXECUTE IMMEDIATELY (Atomic Update)
+           // We skip recalc to avoid O(N^2) performance hit
+           effects.forEach(effect => this.dispatch(effect, { skipRecalc: true }));
         }
       });
     });
-
-    return effects;
   }
 
   private handleEffectResult(result: any, contextId: string, effects: EngineAction[]) {
@@ -708,21 +716,12 @@ export class QuizEngine {
     // We commit this update immediately so the UI clock ticks smoothly
     this.store.setState(nextState);
 
-    // 2. Check Listeners (Optimized O(1) Lookup)
-    // We only run logic if a block explicitly registered a listener for "quiz.timer"
+    // 2. Process Listeners 
     logTest("new Quiz Time:", newValue)
-    const sideEffects = this.processListeners("quiz.timer", newValue);
-    
-    if (sideEffects.length > 0) {
-      sideEffects.forEach(effect => this.dispatch(effect));
-    }
+    this.processListeners("quiz.timer", newValue);
 
-    // 3. Recalculate Derived State?
-    // Optimize: In a perfect world, we check a dependency graph.
-    // For MVP: We run it. Why? Because a block might have hidden logic: 
-    // "hidden": { "==": [{"var": "quiz.timer"}, 30] } (Show a warning at 30s)
-    // Since listeners are handled separately, this loop handles visibility/disabled states.
-    this.recalculateDerivedState(); 
+    // 3. Final Recalculation (Run ONCE after all listeners are done)
+    this.recalculateDerivedState();
   }
 }
 
