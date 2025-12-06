@@ -122,6 +122,15 @@ export class QuizEngine {
         break;
       }
 
+      case "SET_VARIABLE": {
+        nextState.variables = { 
+          ...nextState.variables, 
+          [action.name]: action.value 
+        };
+        hasChanges = true;
+        break;
+      }
+
       case "NAVIGATE": {
         // Logic to validate current page before moving could go here
         nextState.currentStepId = action.targetId;
@@ -168,6 +177,12 @@ export class QuizEngine {
       // Use existing ID or generate stable internal ID
       const id = block.id || `gen_${Math.random().toString(36).substr(2, 9)}`;
       
+      // register id in the schema map 
+      // this ensures that even auto-generated blocks can be looked up by ID.
+      if (!this.schemaMap.has(id)) {
+        this.schemaMap.set(id, block);
+      }
+
       const baseState: BlockRuntimeState = {
         id: id,
         schemaId: block.id || id,
@@ -194,7 +209,20 @@ export class QuizEngine {
       // 2. Containers: Recurse Children
       if (block.type === "container") {
         const container = block as ContainerBlock;
-        const childIds = container.props.children.map(child => processBlock(child, currentScopeId));
+
+        // Recursively process children to get their IDs
+        let childIds = container.props.children.map(child => processBlock(child, currentScopeId));
+        
+        // Behavior: Shuffle
+        if (container.props.behavior?.shuffle_children) {
+          childIds = shuffleArray(childIds);
+        }
+
+        // Behavior: Pick N (Subset)
+        if (typeof container.props.behavior?.pick_n === 'number') {
+          childIds = childIds.slice(0, container.props.behavior.pick_n);
+        }
+        
         baseState.childrenIds = childIds;
       }
 
@@ -299,16 +327,139 @@ export class QuizEngine {
        // If target is {"ref": "required"}, it means update 'computed.required' for self
        // If target is {"ref": "value"}, it means update 'value' for self
        
-       const target = result.target; 
-       const val = result.value;
+      const { target, value } = result;
 
-       logTest("Handling effect result for context:", contextId, "target:", target, "value:", val);
+      logTest("Handling effect result for context:", contextId, "target:", target, "value:", value);
 
-       if (target === "required" || target === "visited") {
-          effects.push({ type: "SET_NODE_PROPERTY", id: contextId, property: target, value: val });
-       } else if (target === "value") {
-          effects.push({ type: "SET_VALUE", id: contextId, value: val });
-       }
+      // A. Global Variable Update (e.g. "quiz.score")
+      if (target.startsWith("quiz.")) {
+        const varName = target.replace("quiz.", "");
+        effects.push({ type: "SET_VARIABLE", name: varName, value: value });
+        return;
+      }
+
+      // B. Node Resolution
+      let targetNodeId = contextId;
+      let targetProp = "value"; // Default property
+
+      if (target === "value") {
+        targetNodeId = contextId;
+      } 
+      else if (target === "required" || target === "visited") {
+        targetNodeId = contextId;
+        targetProp = target;
+      }
+      else if (target.includes(".")) {
+        // "q2.value" or "q2.required"
+        const parts = target.split(".");
+        targetProp = parts.pop()!; // "value" or "required"
+        targetNodeId = parts.join("."); // "q2"
+      }
+
+      // C. Dispatch Appropriate Action
+      if (targetProp === "value") {
+        effects.push({ type: "SET_VALUE", id: targetNodeId, value: value });
+      } else {
+        effects.push({ type: "SET_NODE_PROPERTY", id: targetNodeId, property: targetProp, value: value });
+      }
+    }
+
+    // Handle Compounding Operators (+=, -=)
+    if (result && result.__action === "COMPOUND") {
+      const { target, operator, amount } = result;
+      
+      // 1. Resolve Current Value
+      // We use the evaluator's existing variable lookup logic via {"var": target}
+      // We need to reconstruct the context for this lookup.
+      const state = this.store.getState();
+      
+      // Build a temporary context just for this lookup
+      const context: EvaluationContext = {
+        globals: state.variables,
+        nodes: {}
+      };
+      Object.values(state.nodes).forEach(n => {
+        context.nodes[n.id] = { value: n.value, ...n.computed };
+      });
+
+      // Special handling: if target is "value", we need the local node's value
+      let baseValue;
+      if (target === "value") {
+         baseValue = state.nodes[contextId]?.value;
+      } else {
+         // Use JsonLogic to look it up: {"var": "q1.value"} or {"var": "quiz.score"}
+         baseValue = this.evaluator.evaluate({ "var": target }, context);
+      }
+
+      // 2. Perform Operations
+      // Ensure we are working with the appropriate types
+      const mathOperators: string[] = ["+","-","*","/","%"];
+      const arrayOperators: string[] = ["cat"]; // for append
+      const stringOperators: string[] = [...arrayOperators]; // extend if needed
+      
+      let newValue = baseValue;
+
+      // --- Helper predicates for operator groups ---
+      const isMathOperator = (op: string) => mathOperators.includes(op);
+      const isArrayOperator = (op: string) => arrayOperators.includes(op);
+      const isStringOperator = (op: string) => stringOperators.includes(op);
+
+      // --- Helper functions for cat logic ---
+      const catArray = <T>(base: T | T[] | null | undefined, amount: T | T[]): T[] => {
+        const baseArr = Array.isArray(base)
+          ? base
+          : base == null
+            ? []
+            : [base];
+
+        const amountArr = Array.isArray(amount) ? amount : [amount];
+
+        return [...baseArr, ...amountArr];
+      };
+
+      const catString = (base: unknown, amount: unknown): string => {
+        const baseStr = base == null ? "" : String(base);
+        const amountStr = amount == null ? "" : String(amount);
+        return baseStr + amountStr;
+      };
+
+      // 3. Dispatch by operator kind
+      if (isMathOperator(operator)) {
+        const numBase = Number(baseValue);
+        const numAmount = Number(amount);
+        if (isNaN(numBase) || isNaN(numAmount)) {
+          console.warn(`Invalid numeric compounding operation: ${baseValue} ${operator} ${amount}`);
+          return;
+        }
+
+        if (operator === "+") newValue = numBase + numAmount;
+        if (operator === "-") newValue = numBase - numAmount;
+        if (operator === "*") newValue = numBase * numAmount;
+        if (operator === "/") newValue = numBase / numAmount;
+        if (operator === "%") newValue = numBase % numAmount;
+
+      } else if (isArrayOperator(operator) || isStringOperator(operator)) {
+        // For now we only have "cat" here, but this scales to more ops.
+        if (operator === "cat") {
+          // Prefer array concatenation when at least one side is an array
+          if (Array.isArray(baseValue) || Array.isArray(amount)) {
+            newValue = catArray(baseValue as unknown[], amount as unknown[]);
+          } else {
+            // Fallback to string concatenation
+            newValue = catString(baseValue, amount);
+          }
+        }
+      }
+
+      // 3. Dispatch the Update (Reuse SET logic)
+      // We recursively call handleEffectResult with a synthetic SET action
+      // so we don't duplicate the target parsing logic (properties vs values vs globals).
+      
+      this.handleEffectResult({ 
+        __action: "SET", 
+        target: target, 
+        value: newValue 
+      }, contextId, effects);
     }
   }
 
@@ -444,4 +595,62 @@ export class QuizEngine {
     }
     return { isValid: true, errors: [] };
   }
+
+  /**
+   * Public entry point for UI components to trigger Logic Actions.
+   * Handles "set", "navigate", "+=", "-=", etc. uniformly.
+   */
+  public executeLogicAction(logic: any, contextId: string) {
+    // 1. Build Context
+    const state = this.store.getState();
+    const context: EvaluationContext = {
+      globals: state.variables,
+      nodes: {},
+      // Inject "value" if the contextId refers to a node with a value
+      value: state.nodes[contextId]?.value 
+    };
+    Object.values(state.nodes).forEach(n => {
+      context.nodes[n.id] = { value: n.value, ...n.computed };
+    });
+
+    // 2. Evaluate
+    // This runs the LogicEvaluator. 
+    // Because we registered "set", "+=", etc. as operations that return Action Descriptors,
+    // this will return objects like { __action: "SET", ... } or { __action: "MODIFY", ... }
+    const result = this.evaluator.evaluate(logic, context);
+
+    // 3. Normalize & Process
+    const actions = Array.isArray(result) ? result : [result];
+    const effects: EngineAction[] = [];
+
+    actions.forEach(actionResult => {
+      // Special Case: Navigation is often a direct schema keyword, not a JsonLogic op.
+      // e.g. { "navigate": "p2" } -> The evaluator might just return the object if it doesn't recognize the op.
+      // But ideally, we should wrap navigation in a custom op too.
+      // For now, we check the raw object structure if Evaluator didn't handle it.
+      
+      if (actionResult && typeof actionResult === 'object') {
+        // CASE A: Standard Engine Actions (SET, MODIFY) returned by Evaluator
+        if (actionResult.__action) {
+           this.handleEffectResult(actionResult, contextId, effects);
+        } 
+        // CASE B: Navigation (Legacy Schema)
+        else if ("navigate" in logic) { // Check raw logic for this specific case
+           effects.push({ type: "NAVIGATE", targetId: logic.navigate });
+        }
+      }
+    });
+
+    // 4. Dispatch All Resulting Effects
+    effects.forEach(effect => this.dispatch(effect));
+  }
+}
+
+function shuffleArray<T>(array: T[]): T[] {
+  const arr = [...array];
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  return arr;
 }

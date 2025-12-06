@@ -126,6 +126,29 @@ export class LogicEvaluator {
       console.warn("Invalid 'set' operation: Target must be a {ref: 'path'}", target);
       return null;
     });
+
+    // COMPOUNDING OPERATORS (+=, -=)
+    // Usage: { "+=": [ { "ref": "score" }, 10 ] }
+    const registerCompoundOp = (op: string, instruction: string) => {
+      this.registerOperator(op, (target: any, amount: any) => {
+        if (target && typeof target === "object" && target.__type === "pointer") {
+          return { 
+            __action: "COMPOUND", 
+            operator: instruction, // "+", "-"
+            target: target.path, 
+            amount: amount 
+          };
+        }
+        return null;
+      });
+    };
+
+    registerCompoundOp("+=", "+");
+    registerCompoundOp("-=", "-");
+    registerCompoundOp("*=", "*");
+    registerCompoundOp("/=", "/");
+    registerCompoundOp("%=", "%");
+    registerCompoundOp("append", "cat");
   }
 
   /**

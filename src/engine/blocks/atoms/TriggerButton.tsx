@@ -50,93 +50,11 @@ export const TriggerButton: React.FC<TriggerButtonProps> = ({ block }) => {
     const eventLogic = props.events?.on_click;
     if (!eventLogic) return;
 
-    // We manually inspect the root operator to determine the SIDE EFFECT.
-    // JsonLogic is used only to calculate the VALUES.
-    
-    // Case A: SET VALUE
-    // Schema: { "set": [ target, value ] }
-    // Example: { "set": [ { "ref": "value" }, 10 ] }
-    if (typeof eventLogic === "object" && "set" in eventLogic) {
-      const args = (eventLogic as any).set; // [Target, ValueExpr]
-      if (!Array.isArray(args) || args.length < 2) return;
+    // DELEGATION: Let the engine handle the complexity.
+    // We pass the event logic and our own ID (or parentId) as the context scope.
+    engine.executeLogicAction(eventLogic, parentId || block.id || "");
 
-      const [targetRef, valueExpr] = args;
-      
-      // A.1 Resolve Value
-      // We need the current engine context to evaluate the value expression
-      const globalState = engine.getStore().getState();
-      const context = {
-        globals: globalState.variables,
-        nodes: globalState.nodes
-      };
-
-      // Evaluate the value (e.g., true)
-      const resolvedValue = LogicEvaluator.getInstance().evaluate(valueExpr, context);
-
-      // Resolve the Target 
-      // This returns: { __type: "pointer", path: "value" }
-      const resolvedTarget = LogicEvaluator.getInstance().evaluate(targetRef, context);
-      
-      let targetId: string | null = null;
-
-      if (resolvedTarget && resolvedTarget.__type === "pointer") {
-        const path = resolvedTarget.path;
-
-        // Strategy: "value" means Self (Parent IU). "q_id.value" means External.
-        if (path === "value") {
-          targetId = parentId;
-        } else if (typeof path === "string" && path.endsWith(".value")) {
-          // "q2.value" -> extract "q2"
-          targetId = path.replace(/\.value$/, "");
-        }
-      }
-  
-
-      logTest("RESOLVED TARGET: ", resolvedTarget);
-      
-      if (resolvedTarget && resolvedTarget.__type === "pointer") {
-        const path = resolvedTarget.path; // e.g., "value", "required", "q2.value"
-
-        // SCENARIO 1: Setting the Value (Standard Input)
-        if (path === "value") {
-          logTest("TriggerButton: Setting property", path, " of ", parentId, "to", resolvedValue);
-
-           dispatch({ type: "SET_VALUE", id: parentId!, value: resolvedValue });
-        }
-        // SCENARIO 2: Setting a Property (e.g., "required")
-        else if (path === "required" || path === "visited") {
-
-          dispatch({ type: "SET_NODE_PROPERTY", id: parentId!, property: path, value: resolvedValue });
-        }
-        // SCENARIO 3: Setting External Node Value (e.g., "q2.value")
-        else if (path.endsWith(".value")) {
-           const targetId = path.replace(/\.value$/, "");
-           dispatch({ type: "SET_VALUE", id: targetId, value: resolvedValue });
-        }
-        // SCENARIO 4: Setting External Node Property (e.g., "q2.required")
-        else if (path.endsWith(".required") || path.endsWith(".visited")) {
-           const targetId = path.replace(/\.required$/, "").replace(/\.visited$/, "");
-           const property = path.endsWith(".required") ? "required" : "visited";
-           dispatch({ type: "SET_NODE_PROPERTY", id: targetId, property: property, value: resolvedValue });
-        }
-        else {
-          console.warn("TriggerButton: Invalid SET target. Expected {ref: '...'}, got:", resolvedTarget);
-       }
-      }
-    }
-
-    // Case B: NAVIGATE (Custom convention for MVP)
-    // Schema: { "navigate": "step_id" }
-    if (typeof eventLogic === "object" && "navigate" in eventLogic) {
-      const targetStep = (eventLogic as any).navigate;
-      dispatch({ type: "NAVIGATE", targetId: targetStep });
-    }
-
-    // Case C: Fallback / Submit
-    // If we want a generic "Submit" that moves to next page automatically:
-    // This logic usually lives in the Engine or a specific "submit" operator.
-
-  }, [isDisabled, props.events, parentId, dispatch, engine]);
+  }, [isDisabled, props.events, parentId, engine]);
 
   return (
     <button

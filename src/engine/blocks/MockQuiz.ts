@@ -6,7 +6,8 @@ import { QuizSchema, PageNode, InteractionUnit, ContainerBlock, TextBlock, Trigg
 
 const TEXT_STYLE_PROPS: StyleProperties = {
   font_size: "base",
-  font_weight: "bold"
+  font_weight: "regular",
+  font_style: "normal",
 };
 
 const TEXT_STYLE: StyleSchema = {
@@ -126,7 +127,7 @@ const Q2_TEXT: TextBlock = {
   id: "text_002",
   type: "text",
   props: {
-    content: "What is the capital of *France*?",
+    content: "What is the capital of **France**?",
     styling: { classes: ["text_style_id"] },
   },
 }
@@ -427,7 +428,7 @@ const Q3_TEMPLATE: TemplateDefinition = {
 };
 
 
-const Q3: TemplateInstance = {
+const Q3_INSTANCE: TemplateInstance = {
   type: "template_instance", 
   id: "q2",
 
@@ -470,13 +471,68 @@ const Q3: TemplateInstance = {
   },
 }
 
+// Q4
+const Q4_TEXT: TextBlock = {
+  id: "text_004",
+  type: "text",
+  props: {
+      content: "Increase the counter!",
+      styling: { classes: [] },
+  }
+};
+
+const Q4_TRIGGER: TriggerBlock = {
+  id: "trigger_004",
+  type: "trigger",
+  props: {
+    label: "Increase counter",
+    disabled: false,
+
+    styling: { classes: ["green_bg"] }, 
+
+    events: {
+      on_click: {
+        "+=": [{ ref: "value" }, 1],
+      },
+    },
+  },
+}
+
+const Q4_VIEW: ContainerBlock = {
+  id: "container_004",
+  type: "container",
+  props: {
+    behavior: {
+      shuffle_children: false,
+      pick_n: null,
+    },
+    styling: { classes: [] }, // default styles
+
+    children: [ Q4_TEXT, Q4_TRIGGER ],
+  },
+}
+
+const Q4: InteractionUnit = {
+  id: "q4",
+  type: "interaction_unit",
+  domain_id: "$$INT",
+
+  state: {
+    value: 0,
+    visited: false,
+    required: true,
+  },
+
+  view: Q4_VIEW
+}
+
 
 
 // Page Schema
 const MOCK_PAGE: PageNode = {
   id: "page01",
   title: "First Part: The Only Part.",
-  blocks: [ Q1, Q2 ]
+  blocks: [ Q1, Q2, Q4 ]
 };
 
 // --- MOCK SCHEMA ---

@@ -119,5 +119,6 @@ export type EngineAction =
   | { type: "INIT_SESSION"; schema: any; initialState?: any }
   | { type: "SET_VALUE"; id: RuntimeID; value: any }
   | { type: "SET_NODE_PROPERTY"; id: RuntimeID; property: string; value: any }
+  | { type: "SET_VARIABLE"; name: string; value: any }
   | { type: "NAVIGATE"; targetId: string } // Next/Prev/Jump
   | { type: "EXECUTE_LISTENER"; ruleId: string }; // Trigger side-effects
