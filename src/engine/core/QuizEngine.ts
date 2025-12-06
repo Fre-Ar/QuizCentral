@@ -248,6 +248,16 @@ export class QuizEngine {
   private hydrateState(schema: QuizSchema): QuizSessionState {
     const nodes: Record<RuntimeID, BlockRuntimeState> = {};
 
+    // 1. Initialize Globals from Schema
+    const variables: Record<string, any> = {};
+
+    if (schema.state) {
+      Object.entries(schema.state).forEach(([key, definition]) => {
+        // Namespace them under "quiz." so {"var": "quiz.score"} works
+        variables[`quiz.${key}`] = definition.default;
+      });
+    }
+
     const processBlock = (block: InteractionUnit | VisualBlock, currentScopeId?: string): RuntimeID => {
       // Use existing ID (guaranteed by normalizeIds)
       const id = block.id!;
@@ -317,7 +327,7 @@ export class QuizEngine {
       status: "active",
       currentStepId: schema.pages[0]?.id || "",
       history: [schema.pages[0]?.id || ""],
-      variables: {}, 
+      variables: variables,
       nodes: nodes
     };
   }
@@ -408,8 +418,7 @@ export class QuizEngine {
 
       // A. Global Variable Update (e.g. "quiz.score")
       if (target.startsWith("quiz.")) {
-        const varName = target.replace("quiz.", "");
-        effects.push({ type: "SET_VARIABLE", name: varName, value: value });
+        effects.push({ type: "SET_VARIABLE", name: target, value: value });
         return;
       }
 
