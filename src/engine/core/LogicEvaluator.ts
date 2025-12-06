@@ -1,6 +1,7 @@
 import jsonLogic from "json-logic-js";
 import { EvaluationContext } from "../types/runtime";
 import { LogicExpression } from "../types/schema";
+import { deepEqual } from "@/lib/utils";
 
 /**
  * The Brain of the Quiz Engine.
@@ -16,7 +17,7 @@ export class LogicEvaluator {
   private constructor() {
     this.customOperators = new Map();
     this.initializeBaseOperators();
-    this.overrideEquality();
+    this.overrideOperators();
   }
 
   public static getInstance(): LogicEvaluator {
@@ -120,6 +121,33 @@ export class LogicEvaluator {
       return false;
     });
 
+    // Return list without value
+    this.registerOperator("uncat", (list: any, value: any) => {
+      if (list === null || list === undefined) return list;
+
+      // Array case: remove all elements strictly equal to value
+      if (Array.isArray(list)) {
+        return list.filter((item) => item !== value);
+      }
+
+      // String case: remove all occurrences of `value` as a substring
+      if (typeof list === "string") {
+        if (typeof value !== "string") {
+          // If value isn't a string, we can't meaningfully remove it from a string
+          return list;
+        }
+        if (value === "") {
+          // Avoid weird edge cases: removing empty string does nothing
+          return list;
+        }
+        return list.split(value).join("");
+      }
+
+      // Fallback: if it's neither array nor string, return as-is
+      return list;
+    });
+
+
     // Convert to integer
     this.registerOperator("int", (a: any) => {
       if (a === null || a === undefined) return 0;
@@ -188,45 +216,45 @@ export class LogicEvaluator {
     registerCompoundOp("/=", "/");
     registerCompoundOp("%=", "%");
     registerCompoundOp("append", "cat");
+    registerCompoundOp("remove", "uncat");
   }
 
-  /**
-   * Overrides the default "==" operator to support Value Equality for Arrays.
-   * Standard JS "==" checks references for arrays ([1] == [1] is false).
-   * We want [1] == [1] to be true.
-   */
-  private overrideEquality() {
-    // We register a custom function for "==".
-    // JsonLogic checks its internal operation registry before using built-ins.
+
+  private overrideOperators() {
+    // Override the default "==" operator to support Value Equality for Arrays.
+    // Standard JS "==" checks references for arrays ([1] == [1] is false).
+    // We want [1] == [1] to be true.
     jsonLogic.add_operation("==", (a: any, b: any) => {
       // 1. Array Value Check
       if (Array.isArray(a) && Array.isArray(b)) {
-        return this.deepEqual(a, b);
+        return deepEqual(a, b);
       }
       
       // 2. Standard Loose Equality for everything else
       // This preserves 1 == "1" behavior if you rely on it.
       return a == b; 
     });
-  }
 
-  /**
-   * Recursive Deep Equality Check.
-   * Optimized for Arrays and Primitives.
-   */
-  private deepEqual(a: any, b: any): boolean {
-    if (a === b) return true; // Identical references or primitives
-
-    if (Array.isArray(a) && Array.isArray(b)) {
-      if (a.length !== b.length) return false;
-      for (let i = 0; i < a.length; i++) {
-        if (!this.deepEqual(a[i], b[i])) return false;
+    // Override default 'cat' (Polymorphic Concatenation)
+    // Standard JsonLogic 'cat' forces strings. We want it to handle Arrays too.
+    jsonLogic.add_operation("cat", (...args: any[]) => {
+      // Case A: Array Concatenation
+      // We check if the FIRST argument is an array to determine intent.
+      if (Array.isArray(args[0])) {
+        return args.reduce((acc, curr) => {
+          // If adding an array to an array -> Merge
+          if (Array.isArray(curr)) {
+            return [...acc, ...curr];
+          }
+          // If adding a scalar to an array -> Push
+          // (This is useful for "adding" an item to a list)
+          return [...acc, curr];
+        }, []);
       }
-      return true;
-    }
 
-    // TODO: Add Object support here if your schema compares objects.
-    // For MVP/Arrays, we stop here to save perf.
-    return false;
+      // Case B: String Concatenation (Standard Behavior)
+      // We intentionally treat null/undefined as empty strings here to match JsonLogic spec
+      return args.map(arg => (arg === null || arg === undefined) ? "" : String(arg)).join("");
+    });
   }
 }

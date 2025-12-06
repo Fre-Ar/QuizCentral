@@ -371,12 +371,25 @@ export class QuizEngine {
 
       logTest(id, "goes ahead with logic eval under the context", context)
 
+      const node = state.nodes[id];
+      // resolve the local value
+      let contextValue = node.value;
+      if (node.scopeId && state.nodes[node.scopeId]) {
+        contextValue = state.nodes[node.scopeId].value;
+      }
+
+      // Prepare Local Context (Inject 'value' for self-reference)
+      const localContext = { 
+        ...context, 
+        value: contextValue
+      };
+
       const veridict = this.evaluator.evaluate(
-        { var: "quiz.score" }
-      , context);
+        {var: 'value'}
+      , localContext);
       logTest('veridict:', veridict);
 
-      const rawResult = this.evaluator.evaluate(logicChain as any, context);
+      const rawResult = this.evaluator.evaluate(logicChain as any, localContext);
       const results = Array.isArray(rawResult) ? rawResult : [rawResult];
 
       logTest("Listener evaluation results for block", id, ":", results);
@@ -475,65 +488,16 @@ export class QuizEngine {
          baseValue = this.evaluator.evaluate({ "var": target }, context);
       }
 
-      // 2. Perform Operations
-      // Ensure we are working with the appropriate types
-      const mathOperators: string[] = ["+","-","*","/","%"];
-      const arrayOperators: string[] = ["cat"]; // for append
-      const stringOperators: string[] = [...arrayOperators]; // extend if needed
-      
-      let newValue = baseValue;
-
-      // --- Helper predicates for operator groups ---
-      const isMathOperator = (op: string) => mathOperators.includes(op);
-      const isArrayOperator = (op: string) => arrayOperators.includes(op);
-      const isStringOperator = (op: string) => stringOperators.includes(op);
-
-      // --- Helper functions for cat logic ---
-      const catArray = <T>(base: T | T[] | null | undefined, amount: T | T[]): T[] => {
-        const baseArr = Array.isArray(base)
-          ? base
-          : base == null
-            ? []
-            : [base];
-
-        const amountArr = Array.isArray(amount) ? amount : [amount];
-
-        return [...baseArr, ...amountArr];
+      // 2. Delegate Math
+      // We construct a synthetic JsonLogic rule on the fly.
+      // e.g. If operator is "+", we create rule: { "+": [ baseValue, amount ] }
+      const operationRule = {
+        [operator]: [ baseValue, amount ]
       };
 
-      const catString = (base: unknown, amount: unknown): string => {
-        const baseStr = base == null ? "" : String(base);
-        const amountStr = amount == null ? "" : String(amount);
-        return baseStr + amountStr;
-      };
-
-      // 3. Dispatch by operator kind
-      if (isMathOperator(operator)) {
-        const numBase = Number(baseValue);
-        const numAmount = Number(amount);
-        if (isNaN(numBase) || isNaN(numAmount)) {
-          console.warn(`Invalid numeric compounding operation: ${baseValue} ${operator} ${amount}`);
-          return;
-        }
-
-        if (operator === "+") newValue = numBase + numAmount;
-        if (operator === "-") newValue = numBase - numAmount;
-        if (operator === "*") newValue = numBase * numAmount;
-        if (operator === "/") newValue = numBase / numAmount;
-        if (operator === "%") newValue = numBase % numAmount;
-
-      } else if (isArrayOperator(operator) || isStringOperator(operator)) {
-        // For now we only have "cat" here, but this scales to more ops.
-        if (operator === "cat") {
-          // Prefer array concatenation when at least one side is an array
-          if (Array.isArray(baseValue) || Array.isArray(amount)) {
-            newValue = catArray(baseValue as unknown[], amount as unknown[]);
-          } else {
-            // Fallback to string concatenation
-            newValue = catString(baseValue, amount);
-          }
-        }
-      }
+      // Evaluate the math. 
+      // We pass empty context because we have already resolved the values into literals.
+      const newValue = this.evaluator.evaluate(operationRule, context);
 
       // 3. Dispatch the Update (Reuse SET logic)
       // We recursively call handleEffectResult with a synthetic SET action
@@ -679,6 +643,7 @@ export class QuizEngine {
     // Because we registered "set", "+=", etc. as operations that return Action Descriptors,
     // this will return objects like { __action: "SET", ... } or { __action: "MODIFY", ... }
     const result = this.evaluator.evaluate(logic, context);
+    logTest("[EVAL RESULT]:", result);
 
     // 3. Normalize & Process
     const actions = Array.isArray(result) ? result : [result];

@@ -6,6 +6,7 @@ import { useQuizEngine } from "../../hooks/useQuizEngine";
 import { LogicEvaluator } from "../../core/LogicEvaluator";
 import { useStyleResolver } from "@/engine/hooks/useStyleResolver";
 import { MarkdownText } from "@/engine/utils/MarkdownText";
+import { logTest } from "@/lib/utils";
 
 interface ToggleProps {
   block: ToggleBlock;
@@ -49,27 +50,14 @@ export const Toggle: React.FC<ToggleProps> = ({ block }) => {
 
     // A. Priority: Custom Event (e.g. Set Value to 'Star Rating 5')
     if (props.events?.on_click) {
-      // Execute Logic Action (Reusing TriggerButton logic pattern)
-      const eventLogic = props.events.on_click;
-      
-      if (typeof eventLogic === "object" && "set" in eventLogic) {
-        const args = (eventLogic as any).set;
-        const [targetExpr, valueExpr] = args;
-
-        const context = {
-          globals: engine.getStore().getState().variables,
-          nodes: engine.getStore().getState().nodes
-        };
-        const resolvedValue = LogicEvaluator.getInstance().evaluate(valueExpr, context);
-        
-        // Target is implicit (self) or explicit
-        dispatch({ type: "SET_VALUE", id: parentId, value: resolvedValue });
-      }
+      // let the engine interpret the logic 
+      engine.executeLogicAction(props.events.on_click, parentId);
     } 
     // B. Fallback: Standard Boolean Toggle
     else {
       dispatch({ type: "SET_VALUE", id: parentId, value: !isChecked });
     }
+    // Always mark as visited
     dispatch({ type: "SET_NODE_PROPERTY", id: parentId, property: "visited", value: true });
   }, [isDisabled, parentId, props.events, isChecked, dispatch, engine]);
 

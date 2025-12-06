@@ -1,14 +1,14 @@
 "use client";
 
 import { QuizProvider} from "@/engine/hooks/useQuizContext";
-import { MOCK_SCHEMA, MOCK_USER_STYLES }  from "@/engine/blocks/MockQuiz";
+import { MOCK_SCHEMA, MOCK_USER_STYLES, MOCK_USER_TEMPLATES }  from "@/engine/blocks/MockQuiz";
 import { QuizRenderer }  from "@/engine/core/Renderer";
 import Header from '@/components/header';
 import { LogicEvaluator } from "@/engine/core/LogicEvaluator";
 
 export default function TestPage() {
   return (
-    <QuizProvider schema={MOCK_SCHEMA} registry={MOCK_USER_STYLES}>
+    <QuizProvider schema={MOCK_SCHEMA} styleRegistry={MOCK_USER_STYLES} templateRegistry={MOCK_USER_TEMPLATES}>
       <div className="min-h-screen flex flex-col">
         <Header />
         <main className="grow flex justify-center">

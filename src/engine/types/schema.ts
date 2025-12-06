@@ -235,7 +235,8 @@ export interface InteractionUnit extends BaseBlock{
 export type VisualBlock = 
   | StaticBlock
   | MetaphorBlock 
-  | ContainerBlock;
+  | ContainerBlock
+  | TemplateInstance; 
 
 // 1. Static Content
 
@@ -367,19 +368,24 @@ export interface ContainerProps extends BaseProps {
 
 
 // 4. Types for the Template System 
+export type TemplateRegistry = Map<string, TemplateDefinition>;
+
 export interface TemplateDefinition {
   type: "template";
   id: string;
   name: string;
   parameters: Record<string, any>; // Schema definition
+  // TODO: Template type strictness
   structure: any; // The Blueprint
 }
 
-export interface TemplateInstance {
+export interface TemplateInstance extends BaseBlock {
   type: "template_instance";
   id: string;
   template_id: string;
-  parameters: Record<string, any>;
+  parameters: Record<string, any>; // The values filling the params
+
+  // Overrides
   state?: any;
   behavior?: any;
 }

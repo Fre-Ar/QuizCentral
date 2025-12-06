@@ -1,11 +1,11 @@
-import { QuizSchema, PageNode, InteractionUnit, VisualBlock, TemplateDefinition, TemplateInstance } from "../types/schema";
+import { QuizSchema, PageNode, TemplateDefinition, TemplateInstance, TemplateRegistry } from "../types/schema";
 
 
 export class TemplateCompiler {
-  private templates: Map<string, TemplateDefinition>;
+  private templates: TemplateRegistry;
 
-  constructor(templates: TemplateDefinition[]) {
-    this.templates = new Map(templates.map(t => [t.id, t]));
+  constructor(templates: TemplateRegistry) {
+    this.templates = templates;
   }
 
   /**
@@ -92,25 +92,25 @@ export class TemplateCompiler {
 
     // C. Behavior (Deep Merge)
     if (instance.behavior) {
-      const baseBehav = expandedStructure.behavior || {};
-      const overBehav = instance.behavior;
+      const base = expandedStructure.behavior || {};
+      const over = instance.behavior;
 
       expandedStructure.behavior = {
-        ...baseBehav,
+        ...base,
         // Overwrite simple keys
-        ...(overBehav.hidden ? { hidden: overBehav.hidden } : {}),
-        ...(overBehav.disabled ? { disabled: overBehav.disabled } : {}),
+        ...(over.hidden ? { hidden: over.hidden } : {}),
+        ...(over.disabled ? { disabled: over.disabled } : {}),
         
         // Merge Listeners
         listeners: {
-          ...(baseBehav.listeners || {}),
-          ...(overBehav.listeners || {})
+          ...(base.listeners || {}),
+          ...(over.listeners || {})
         },
         
         // Concatenate Validators
         context_validators: [
-          ...(baseBehav.context_validators || []),
-          ...(overBehav.context_validators || [])
+          ...(base.context_validators || []),
+          ...(over.context_validators || [])
         ]
       };
     }
@@ -119,8 +119,11 @@ export class TemplateCompiler {
     // The expanded structure might contain *nested* template instances or containers with children.
     // We must pass the result back through compileBlockList.
     // Since compileBlockList expects an array, and this returns one block, we wrap/unwrap.
-    if (expandedStructure.view) {
-       expandedStructure.view = this.compileBlockList([expandedStructure.view])[0];
+    if (expandedStructure.type === "interaction_unit") {
+       const res = this.compileBlockList([expandedStructure.view]);
+       expandedStructure.view = res[0];
+    } else if (expandedStructure.props?.children) {
+       expandedStructure.props.children = this.compileBlockList(expandedStructure.props.children);
     }
 
     return expandedStructure;
@@ -180,6 +183,7 @@ export class TemplateCompiler {
     if (typeof node !== "object" || node === null) return false;
     const keys = Object.keys(node);
     if (keys.length !== 1) return false;
+    // We treat "var" as a replacement ONLY if we can resolve it in the current context (e.g. inside a loop)
     return keys[0] === "param" || keys[0] === "var"; 
   }
 
@@ -226,13 +230,12 @@ export class TemplateCompiler {
     // Resolve 'cases'. It might be a static array, or a $$map that generates an array.
     const casesArray = this.expandDirectives(cases, context);
 
-    if (!Array.isArray(casesArray)) {
-      return def;
-    }
+    if (!Array.isArray(casesArray)) return def;
 
     // Build the If-Chain Backwards
     let logicChain = def;
 
+    // Build nested if-else chain backwards
     for (let i = casesArray.length - 1; i >= 0; i--) {
       const { match, result } = casesArray[i];
       logicChain = {
@@ -247,8 +250,14 @@ export class TemplateCompiler {
     return logicChain;
   }
 
-  private getValueByPath(obj: any, path: string): any {
-    if (!path) return undefined;
-    return path.split('.').reduce((acc, part) => acc && acc[part], obj);
+  private getValueByPath(obj: any, path: any): any {
+    if (typeof path !== 'string' || !path) return undefined;
+    const keys = path.split('.');
+    let current = obj;
+    for (const key of keys) {
+      if (current === null || current === undefined) return undefined;
+      current = current[key];
+    }
+    return current;
   }
 }

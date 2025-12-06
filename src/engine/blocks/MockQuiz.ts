@@ -1,4 +1,4 @@
-import { QuizSchema, PageNode, InteractionUnit, ContainerBlock, TextBlock, TriggerBlock, ToggleBlock, StyleSchema, StyleProperties, StyleRegistry, TemplateDefinition, TemplateInstance } from "@/engine/types/schema";
+import { QuizSchema, PageNode, InteractionUnit, ContainerBlock, TextBlock, TriggerBlock, ToggleBlock, StyleSchema, StyleProperties, StyleRegistry, TemplateDefinition, TemplateInstance, TemplateRegistry } from "@/engine/types/schema";
 
 // ==========
 // Styles
@@ -319,7 +319,7 @@ const Q3_option = {
     },
 
     events: {
-      on_click: { "set": [{ var: "value" }, [{ var: "opt.value" }]] },
+      on_click: { "set": [{ ref: "value" }, [{ var: "opt.value" }]] },
     },
   },
 }
@@ -364,6 +364,51 @@ const Q3_Domain = {
   }
 }
 
+const Q3_IU = {
+  type: "interaction_unit",
+  domain_id: Q3_Domain, // [ [1], [2], [3], [4] ]
+
+  state: {
+    value: null,
+    visited: false,
+    required: true,
+  },
+
+  behavior: {
+    listeners: {
+      "quiz.timer": [{
+        if: [
+          { "==": [{ var: "quiz.timer" }, 0] },
+          {
+            "+=": [
+              { ref: "quiz.score" },
+              {
+                $$switch: {
+                  on: { var: "value" },
+                  cases: {
+                    $$map: {
+                      source: { param: "options" },
+                      as: "opt",
+                      template: {
+                        match: [ { var: "opt.value" } ],
+                        result: { var: "opt.points" },
+                      },
+                    },
+                  },
+                  default: 0,
+                },
+              },
+            ],
+          },
+          null,
+        ],
+      }],
+    }
+  },
+
+  view: Q3_VIEW,
+}
+
 const Q3_TEMPLATE: TemplateDefinition = {
   type: "template",
   id: "tpl_mcq_single", 
@@ -381,54 +426,13 @@ const Q3_TEMPLATE: TemplateDefinition = {
     shuffle_options: "boolean",
   },
 
-  structure: {
-    type: "interaction_unit",
-    domain_id: Q3_Domain, // [ [1], [2], [3], [4] ]
-
-    state: {
-      value: null,
-      visited: false,
-      required: true,
-    },
-
-    behavior: {
-      "quiz.timer": {
-        if: [
-          { "==": [{ var: "quiz.timer" }, 0] },
-          {
-            "+=": [
-              { ref: "quiz.score" },
-              {
-                $$switch: {
-                  on: { var: "value" },
-                  cases: {
-                    $$map: {
-                      source: { param: "options" },
-                      as: "opt",
-                      template: {
-                        match: { var: "opt.value" },
-                        result: { var: "opt.points" },
-                      },
-                    },
-                  },
-                  default: 0,
-                },
-              },
-            ],
-          },
-          null,
-        ],
-      },
-    },
-
-    view: Q3_VIEW,
-  }
+  structure: Q3_IU
 };
 
 
 const Q3_INSTANCE: TemplateInstance = {
   type: "template_instance", 
-  id: "q2",
+  id: "q3",
 
   template_id: "tpl_mcq_single",
 
@@ -442,13 +446,13 @@ const Q3_INSTANCE: TemplateInstance = {
     },
 
     listeners: {
-      "q1.value": {
-        if: [
+      "q1.value": [{
+        "if": [
           { "==": [{ var: "q1.value" }, true] },
-          { set: [{ var: "required" }, true] },
+          { "set": [{ ref: "required" }, true] },
           null,
         ],
-      }
+      }],
     }
   },
 
@@ -468,6 +472,157 @@ const Q3_INSTANCE: TemplateInstance = {
     shuffle_options: true,
   },
 }
+
+// Q5 (Template)
+
+const Q5_option = {
+  type: "toggle",
+  props: {
+    variant: "checkbox",
+
+    label: { var: "opt.label" },
+    label_position: "end",
+
+    styling: { classes: { param: "option_style" } },
+    
+    state_logic:{
+      active: {
+        "in": [{ var: "opt.value" }, { var: "value" }],
+      }
+    },
+
+    events: {
+      on_click: {
+        "if": [
+          {"in": [{ var: "opt.value" }, { var: "value" }] },
+          {"remove": [{ ref: "value" }, { var: "opt.value" }] },
+          {"append": [{ ref: "value" }, { var: "opt.value" }] }
+        ]
+      }
+    }
+  }
+}
+
+const Q5_OPTIONS = {
+  type: "container",
+  props: {
+    behavior: {
+      shuffle_children: { param: "shuffle_options" },
+      pick_n: null, 
+    },
+    styling: { classes: { param: "option_container_style" } },
+
+    children: {
+      $$map: {
+        source: { param: "options" },
+        as: "opt",
+        template: Q5_option
+      },
+    }
+  }
+}
+
+const Q5_VIEW = {
+  type: "container",
+  props: {
+    behavior: {
+      shuffle_children: false,
+      pick_n: null,
+    },
+    styling:{ classes: { param: "container_style" } },
+
+    children: [ Q3_TEXT, Q5_OPTIONS ],
+  },
+}
+
+const Q5_Domain = "$$ARRAY";
+
+const Q5_IU = {
+  type: "interaction_unit",
+  domain_id: Q5_Domain,
+
+  state: {
+    value: [],
+    visited: false,
+    required: true,
+  },
+
+  behavior: {
+    listeners: {
+      "quiz.timer": {
+        $$map: {
+          source: { param: "options" },
+          as: "opt",
+          template: {
+            "if": [
+              { "and": [
+                { "==": [{ var: "quiz.timer" }, 0] },
+                { "in": [{ var: "opt.value" }, { var: "value" }] } ]
+              },
+              { "+=": [
+                { ref: "quiz.score" },
+                { var: "opt.points" }
+              ]},
+              null
+            ]
+          },
+        }
+      }
+    }
+  },
+
+  view: Q5_VIEW,
+}
+
+const Q5_TEMPLATE: TemplateDefinition = {
+  type: "template",
+  id: "tpl_mcq_mult", 
+  name: "Scored MCQ (Multiple Answers)",
+  parameters: {
+    question: "string", 
+    options: [
+      { label: "string", value: "any", points: "number" },
+    ],
+    container_style: ["style_id"], 
+    question_text_style: ["style_id"],
+    option_container_style: ["style_id"],
+    option_style: ["style_id"],
+
+    shuffle_options: "boolean",
+  },
+
+  structure: Q5_IU
+};
+
+
+const Q5_INSTANCE: TemplateInstance = {
+  type: "template_instance", 
+  id: "q5",
+
+  template_id: "tpl_mcq_mult",
+
+  state: {
+    required: false,
+  },
+
+  parameters: {
+    question: "Which of the following are colors? (Select all that apply)",
+    options: [
+      { label: "Red", value: 1, points: 0.5 },
+      { label: "Blue", value: 2, points: 0.5 },
+      { label: "Banana", value: 3, points: 0.0 },
+      { label: "Dog", value: 4, points: -1.0 },
+    ],
+    container_style: [], // no style, default
+    question_text_style: ["text_style_id"],
+    option_container_style: ["question_container"],
+    option_style: ["green_bg", "white_text"],
+
+    shuffle_options: true,
+  },
+}
+
+
 
 // Q4
 const Q4_TEXT: TextBlock = {
@@ -535,7 +690,7 @@ const Q4: InteractionUnit = {
 const MOCK_PAGE: PageNode = {
   id: "page01",
   title: "First Part: The Only Part.",
-  blocks: [ Q1, Q2, Q4 ]
+  blocks: [ Q1, Q3_INSTANCE, Q4, Q5_INSTANCE ]
 };
 
 // --- MOCK SCHEMA ---
@@ -558,3 +713,9 @@ export const MOCK_SCHEMA: QuizSchema = {
 
   pages: [MOCK_PAGE],
 };
+
+const TEMPLATES = [Q3_TEMPLATE, Q5_TEMPLATE]
+
+export const MOCK_USER_TEMPLATES: TemplateRegistry = new Map(
+  TEMPLATES.map((template) => [template.id, template])
+);

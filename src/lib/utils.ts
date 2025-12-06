@@ -122,3 +122,19 @@ export function logTest(...parts: any[]): void {
     "background: #2e4126; color: #b6fdab; padding: 2px 6px; border-radius: 4px;",
   );
 }
+
+/**
+ * Recursive Deep Equality Check.
+ * Optimized for Arrays and Primitives.
+ */
+export function deepEqual(a: any, b: any): boolean {
+  if (a === b) return true; // Identical references or primitives
+
+  if (Array.isArray(a) && Array.isArray(b)) {
+    return a.length === b.length && a.every((v, i) => deepEqual(v, b[i]));
+  }
+
+  // TODO: Add Object support here if the schema compares objects.
+  // For MVP/Arrays, we stop here to save perf.
+  return false;
+}

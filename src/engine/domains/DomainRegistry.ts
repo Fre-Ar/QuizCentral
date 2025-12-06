@@ -1,12 +1,15 @@
 import { DomainDefinition, DomainID, DomainTransform } from "../types/schema";
 import { LogicEvaluator } from "../core/LogicEvaluator";
 import { EvaluationContext } from "../types/runtime";
+import { deepEqual } from "@/lib/utils";
 
 // Primitive domains
 const string_domain = "$$STRING";
 const int_domain = "$$INT";
 const bool_domain = "$$BOOL";
 const float_domain = "$$FLOAT";
+const array_domain = "$$ARRAY";
+const any_domain = "$$ANY";
 
 
 /**
@@ -22,7 +25,7 @@ export class DomainRegistry {
   private cache: Map<DomainID, any[]> = new Map(); // Memoized generated sets
 
   // Reserved IDs for infinite primitives
-  private static PRIMITIVES = new Set([string_domain, int_domain, bool_domain, float_domain]);
+  private static PRIMITIVES = new Set([string_domain, int_domain, bool_domain, float_domain, array_domain, any_domain]);
 
   private constructor() {}
 
@@ -45,15 +48,21 @@ export class DomainRegistry {
    */
   public validate(value: any, domainId: DomainID): boolean {
     // 1. Handle Primitives (Base Axioms)
-    if (domainId === "$$INT") return Number.isInteger(value);
-    if (domainId === "$$FLOAT") return typeof value === "number" && !Number.isNaN(value);
-    if (domainId === "$$STRING") return typeof value === "string";
-    if (domainId === "$$BOOL") return typeof value === "boolean";
+    if (domainId === any_domain) return true;
+    if (domainId === int_domain) return Number.isInteger(value);
+    if (domainId === float_domain) return typeof value === "number" && !Number.isNaN(value);
+    if (domainId === string_domain) return typeof value === "string";
+    if (domainId === bool_domain) return typeof value === "boolean";
+    if (domainId === array_domain) return Array.isArray(value);
 
     // TODO: REMOVE THIS HOTFIX (allowed domainIds to be arrays when that's a bad way to handle this)
     if (Array.isArray(domainId)) {
       // Array Domain: value must be in the array
-      return domainId.includes(value);
+      // Simple set membership check
+      // Note: If domain elements are arrays (like [1]), we need deep equality check
+      // for inclusions.
+      return domainId.some(item => deepEqual(item, value));
+      
     }
 
     const def = this.definitions.get(domainId);
