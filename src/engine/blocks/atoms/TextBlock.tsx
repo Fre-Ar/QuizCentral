@@ -1,6 +1,7 @@
 import React from "react";
 import { TextBlock as TextBlockSchema } from "../../types/schema";
 import { useStyleResolver } from "@/engine/hooks/useStyleResolver";
+import { MarkdownText } from "../../utils/MarkdownText";
 
 interface TextBlockProps {
   block: TextBlockSchema;
@@ -22,10 +23,7 @@ export const TextBlock: React.FC<TextBlockProps> = ({ block }) => {
       className={baseClasses}
       style={style}
     >
-      {/* TODO: Integration Point for Markdown Parser.
-         Example: <ReactMarkdown>{props.content}</ReactMarkdown> 
-      */}
-      {props.content}
+      <MarkdownText content={props.content} variant="block" />
     </div>
   );
 };

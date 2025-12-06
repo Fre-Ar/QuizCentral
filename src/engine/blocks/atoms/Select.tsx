@@ -6,6 +6,7 @@ import { useQuizEngine } from "../../hooks/useQuizEngine";
 import { useStyleResolver } from "@/engine/hooks/useStyleResolver";
 import { DomainRegistry } from "../../domains/DomainRegistry";
 import { QuizEngine } from "@/engine/core/QuizEngine";
+import { MarkdownText } from "../../utils/MarkdownText";
 
 interface SelectProps {
   block: SelectBlock;
@@ -136,7 +137,7 @@ export const Select: React.FC<SelectProps> = ({ block }) => {
         `}
       >
         <option value="" disabled>
-          {props.placeholder || "Select an option..."}
+          <MarkdownText content= {props.placeholder || "Select an option..."} variant="inline" />
         </option>
         
         {options.map((opt, idx) => (

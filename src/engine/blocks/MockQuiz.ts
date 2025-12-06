@@ -126,7 +126,7 @@ const Q2_TEXT: TextBlock = {
   id: "text_002",
   type: "text",
   props: {
-    content: "What is the capital of **France**?",
+    content: "What is the capital of *France*?",
     styling: { classes: ["text_style_id"] },
   },
 }

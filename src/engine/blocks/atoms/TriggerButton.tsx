@@ -6,6 +6,7 @@ import { useBlockState } from "../../hooks/useBlockState";
 import { useStyleResolver } from "@/engine/hooks/useStyleResolver";
 import { LogicEvaluator } from "../../core/LogicEvaluator";
 import { logTest } from "@/lib/utils";
+import { MarkdownText } from "../../utils/MarkdownText";
 
 interface TriggerButtonProps {
   block: TriggerBlock;
@@ -146,7 +147,7 @@ export const TriggerButton: React.FC<TriggerButtonProps> = ({ block }) => {
       disabled={isDisabled}
       onClick={handleClick}
     >
-      {props.label}
+      <MarkdownText content={props.label} variant="inline" />
     </button>
   );
 };

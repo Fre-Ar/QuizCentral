@@ -5,6 +5,7 @@ import { useBlockState } from "../../hooks/useBlockState";
 import { useQuizEngine } from "../../hooks/useQuizEngine";
 import { LogicEvaluator } from "../../core/LogicEvaluator";
 import { useStyleResolver } from "@/engine/hooks/useStyleResolver";
+import { MarkdownText } from "@/engine/utils/MarkdownText";
 
 interface ToggleProps {
   block: ToggleBlock;
@@ -90,6 +91,25 @@ export const Toggle: React.FC<ToggleProps> = ({ block }) => {
       );
     }
 
+    // VARIANT: RADIO (New)
+    if (props.variant === "radio") {
+      return (
+        <div className={`
+          w-5 h-5 border-2 rounded-full flex items-center justify-center transition-all
+          ${isChecked ? "border-blue-600" : "border-gray-400 bg-white"}
+          ${isDisabled ? "opacity-50 cursor-not-allowed" : "cursor-pointer hover:border-blue-400"}
+        `}>
+          {isChecked && (
+            <div className="w-2.5 h-2.5 bg-blue-600 rounded-full" />
+          )}
+        </div>
+      );
+    }
+
+    if (typeof props.variant === "object" && props.variant.icon_on && props.variant.icon_off) {
+      // TODO: Add icon rendering logic here
+    }
+
     // CHECKBOX VARIANT (Default)
     return (
       <div className={`
@@ -104,8 +124,6 @@ export const Toggle: React.FC<ToggleProps> = ({ block }) => {
         )}
       </div>
     );
-
-    // TODO: Add RADIO variant 
   };
 
   // 5. Layout (Label Position)
@@ -118,11 +136,15 @@ export const Toggle: React.FC<ToggleProps> = ({ block }) => {
       style={style}
       onClick={handleClick}
     >
-      {isLabelStart && <span className="text-sm font-medium">{props.label}</span>}
+      {isLabelStart && <span className="text-sm font-medium">
+        <MarkdownText content={props.label} variant="inline" />
+      </span>}
       
       {renderControl()}
       
-      {!isLabelStart && <span className="text-sm font-medium">{props.label}</span>}
+      {!isLabelStart && <span className="text-sm font-medium">
+        <MarkdownText content={props.label} variant="inline" />
+      </span>}
     </div>
   );
 };
