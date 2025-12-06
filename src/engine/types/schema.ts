@@ -211,6 +211,7 @@ export interface PageNode {
 // --- INTERACTION UNIT (The Logic Wrapper) ---
 
 export interface InteractionUnit extends BaseBlock{
+  id: string;
   type: "interaction_unit";
   domain_id: DomainID;
   

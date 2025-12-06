@@ -473,7 +473,6 @@ const Q3_INSTANCE: TemplateInstance = {
 
 // Q4
 const Q4_TEXT: TextBlock = {
-  id: "text_004",
   type: "text",
   props: {
       content: "Increase the counter!",
@@ -482,7 +481,6 @@ const Q4_TEXT: TextBlock = {
 };
 
 const Q4_TRIGGER: TriggerBlock = {
-  id: "trigger_004",
   type: "trigger",
   props: {
     label: "Increase counter",
@@ -499,7 +497,6 @@ const Q4_TRIGGER: TriggerBlock = {
 }
 
 const Q4_VIEW: ContainerBlock = {
-  id: "container_004",
   type: "container",
   props: {
     behavior: {

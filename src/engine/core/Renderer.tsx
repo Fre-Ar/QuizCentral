@@ -13,8 +13,12 @@ export const QuizRenderer = () => {
   // or just use engine.getStore().subscribe manually.
   const session = useSessionState((s) => s);
 
+  // The engine has the "Real" schema with generated IDs.
+  // MOCK_SCHEMA is just the blueprint and might have undefined IDs.
+  const schema = engine.getSchema();
+
   // Find Active Page
-  const activePage = MOCK_SCHEMA.pages.find(p => p.id === session.currentStepId);
+  const activePage = schema.pages.find(p => p.id === session.currentStepId);
 
   if (!activePage) return <div>Quiz Completed or Invalid State</div>;
 
@@ -22,11 +26,11 @@ export const QuizRenderer = () => {
     <div className="flex gap-8 p-8 max-w-6xl mx-auto">
       {/* LEFT: THE FORM */}
       <div className="flex-1 justify-items-center bg-black p-8 rounded-xl shadow-lg border border-gray-100">
-        <h1 className="text-2xl font-bold mb-6">{MOCK_SCHEMA.meta.title}</h1>
+        <h1 className="text-2xl font-bold mb-6">{schema.meta.title}</h1>
         
         <div className="space-y-6">
-          {activePage.blocks.map((block, idx) => (
-             <BlockFactory key={block.id || idx} block={block} />
+          {activePage.blocks.map((block) => (
+             <BlockFactory key={block.id} block={block} />
           ))}
         </div>
       </div>

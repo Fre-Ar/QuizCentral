@@ -31,16 +31,23 @@ export class QuizEngine {
     // 1. Index Schema (Builds the schemaMap)
     this.indexSchema(schema);
 
-    // 2. Hydrate Initial State
+    // 2. Normalize (Generate IDs for everything FIRST)
+    this.normalizeIds(this.schema);
+
+    // 3. Hydrate Initial State
     const initialState = this.hydrateState(schema);
     this.store = new StateStore(initialState);
     
-    // 3. Initial Computation (Resolve initial visibility/logic)
+    // 4. Initial Computation (Resolve initial visibility/logic)
     this.recalculateDerivedState();
   }
 
   public getStore(): StateStore {
     return this.store;
+  }
+
+  public getSchema(): QuizSchema {
+    return this.schema;
   }
 
   public getSchemaBlock(id: string): InteractionUnit | VisualBlock | undefined {
@@ -170,12 +177,30 @@ export class QuizEngine {
     schema.pages.forEach(p => p.blocks.forEach(visit));
   }
 
+  private normalizeIds(schema: QuizSchema) {
+    const visit = (block: InteractionUnit | VisualBlock) => {
+      // Generate ID if missing
+      if (!block.id) {
+        block.id = `gen_${Math.random().toString(36).substr(2, 9)}`;
+      }
+
+      // Recurse
+      if (block.type === "interaction_unit") {
+        visit((block as InteractionUnit).view);
+      } else if (block.type === "container") {
+        (block as ContainerBlock).props.children.forEach(visit);
+      }
+    };
+
+    schema.pages.forEach(p => p.blocks.forEach(visit));
+  }
+
   private hydrateState(schema: QuizSchema): QuizSessionState {
     const nodes: Record<RuntimeID, BlockRuntimeState> = {};
 
     const processBlock = (block: InteractionUnit | VisualBlock, currentScopeId?: string): RuntimeID => {
-      // Use existing ID or generate stable internal ID
-      const id = block.id || `gen_${Math.random().toString(36).substr(2, 9)}`;
+      // Use existing ID (guaranteed by normalizeIds)
+      const id = block.id!;
       
       // register id in the schema map 
       // this ensures that even auto-generated blocks can be looked up by ID.
