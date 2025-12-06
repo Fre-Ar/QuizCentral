@@ -56,7 +56,7 @@ export class QuizEngine {
     let hasChanges = false;
 
     logTest("Dispatching action:", action);
-    
+
     switch (action.type) {
       case "SET_VALUE": {
         const node = nextState.nodes[action.id];
@@ -79,6 +79,7 @@ export class QuizEngine {
         hasChanges = true;
 
         // 2. Commit State Immediately (so listeners see the new value)
+        logTest("Committing state for SET_VALUE:", nextState);
         this.store.setState(nextState);
 
         // 3. Process Listeners (Side Effects)
@@ -170,12 +171,15 @@ export class QuizEngine {
       const baseState: BlockRuntimeState = {
         id: id,
         schemaId: block.id || id,
+        scopeId: currentScopeId,
         value: null,
         visited: false,
         touched: false,
         validation: { isValid: true, errors: [] },
         computed: { hidden: false, disabled: false, required: false },
       };
+
+      logTest("Hydrating block:", id, "of type:", block.type, "with scope:", currentScopeId);
 
       // 1. Interaction Units: Initialize Logic State
       if (block.type === "interaction_unit") {
@@ -240,6 +244,7 @@ export class QuizEngine {
       const iu = block as InteractionUnit;
       
       const listeners = iu.behavior?.listeners;
+      logTest("Processing listeners for block:", id, "Listeners:", listeners, "for triggerKey:", triggerKey);
       if (!listeners || !listeners[triggerKey]) return;
 
       const logicChain = listeners[triggerKey];
@@ -256,9 +261,17 @@ export class QuizEngine {
       // IF logicChain contains "set", we assume the schema intention is side-effect.
       
       const result = this.evaluator.evaluate(logicChain as any, context);
+
+      logTest("Listener evaluation result for block", id, ":", result);
+
+      if (result && Array.isArray(result)) {
+        logTest("It's an array!")
+        result.forEach((res: any) =>
+        this.handleEffectResult(res, id, effects));
+      }
       
       if (result && typeof result === "object") {
-         this.handleEffectResult(result, id, effects);
+        this.handleEffectResult(result, id, effects);
       }
     });
 
@@ -283,26 +296,16 @@ export class QuizEngine {
     
     if (result && result.__action === "SET") {
        // Target Resolution
-       // If target is {"var": "required"}, it means update 'computed.required' for self
-       // If target is {"var": "value"}, it means update 'value' for self
+       // If target is {"ref": "required"}, it means update 'computed.required' for self
+       // If target is {"ref": "value"}, it means update 'value' for self
        
        const target = result.target; 
        const val = result.value;
 
-       if (target === "required") {
-          // We can't dispatch SET_VALUE for 'required', we must manually mutate the node state
-          // or add a new Action Type. Let's mutate directly for now (dirty but works for Computed).
-          // Actually, 'required' is computed state. We should store it in variables if it's dynamic?
-          // No, let's treat it as an update.
-          // Implementation Detail: We need a SET_PROPERTY action.
-          // For MVP, let's just log it. Dynamic 'required' is complex.
-          console.log(`Setting REQUIRED on ${contextId} to ${val}`);
-          // Hack: Mutate store directly for this specific flag (Not recommended for prod)
-          const state = this.store.getState();
-          if (state.nodes[contextId]) {
-             state.nodes[contextId].computed.required = val;
-             this.store.setState({ ...state });
-          }
+       logTest("Handling effect result for context:", contextId, "target:", target, "value:", val);
+
+       if (target === "required" || target === "visited") {
+          effects.push({ type: "SET_NODE_PROPERTY", id: contextId, property: target, value: val });
        } else if (target === "value") {
           effects.push({ type: "SET_VALUE", id: contextId, value: val });
        }
@@ -337,6 +340,16 @@ export class QuizEngine {
       const schemaBlock = this.schemaMap.get(node.schemaId);
       if (!schemaBlock) return;
 
+      // --- DEBUGGING START ---
+      // We are looking specifically for the Trigger
+      if (node.id === "trigger_001") {
+         logTest(`[DEBUG Trigger] ID: ${node.id}, ScopeID: ${node.scopeId}`);
+         if (node.scopeId) {
+            logTest(`[DEBUG Trigger] Parent Value:`, nodes[node.scopeId]?.value);
+         }
+      }
+      // --- DEBUGGING END ---
+
       // RESOLVE THE LOCAL VALUE
       // If I have a Scope (Parent IU), use its value.
       // If not (I am the IU), use my own value.
@@ -351,6 +364,12 @@ export class QuizEngine {
         ...context, 
         value: contextValue
       };
+
+      // --- DEBUGGING START ---
+      if (node.id === "trigger_001") {
+         logTest(`[DEBUG Trigger] Local Context Value:`, localContext.value);
+      }
+      // --- DEBUGGING END ---
 
       let isHidden = node.computed.hidden;
       let isDisabled = node.computed.disabled;
@@ -376,7 +395,14 @@ export class QuizEngine {
                isHidden = this.evaluator.evaluate(sl.hidden, localContext);
             }
             if (sl.disabled) {
-               isDisabled = this.evaluator.evaluate(sl.disabled, localContext);
+              const result = this.evaluator.evaluate(sl.disabled, localContext);
+              // --- DEBUGGING START ---
+               if (node.id === "trigger_001") {
+                  logTest(`[DEBUG Trigger] Evaluated Logic:`, JSON.stringify(sl.disabled));
+                  logTest(`[DEBUG Trigger] Result:`, result);
+               }
+               // --- DEBUGGING END ---
+              isDisabled = result;
             }
          }
       }

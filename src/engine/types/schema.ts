@@ -26,6 +26,23 @@ export type InteractionState = {
   required?: boolean; // Is valid input mandatory?
 };
 
+export type ParamType = {var: string} | {ref: string} | {param: string};
+
+export type ArrayCreator = { 
+  $$map: {
+    source: any[] | ParamType;
+    as?: string;
+    template: VisualBlock | InteractionUnit;
+  }
+};
+
+export type ExtraLogicOperator = {
+  $$switch: {
+    on: ParamType;
+    cases: { match: any; result: any}[] | ArrayCreator;
+  }
+}
+
 // ============================================================================
 // 2. DOMAIN SCHEMA (Data Modeling)
 // ============================================================================
@@ -90,7 +107,7 @@ export interface DomainOperation {
 // 3. STYLE SCHEMA
 // ============================================================================
 
-export type StyleID = string;
+export type StyleID = string; 
 
 export interface StyleProperties {
   // --- LAYOUT & POSITIONING ---
@@ -148,7 +165,7 @@ export interface StyleSchema {
 }
 
 export interface StylingProps {
-  classes: StyleID[];
+  classes: StyleID[]; 
   overrides?: Partial<StyleProperties>;
 }
 
@@ -161,7 +178,7 @@ export type StyleRegistry = Map<string, StyleProperties>;
 // --- BASE BLOCK ---
 export interface BaseBlock {
   type: string;
-  id: string; 
+  id?: string; 
 }
 
 export interface BaseProps {
@@ -239,7 +256,7 @@ export interface DividerBlock extends BaseBlock {
 }
 
 export interface TextProps extends BaseProps {
-  content: string;
+  content: string; 
 }
 
 export interface ImageProps extends BaseProps {
@@ -304,32 +321,32 @@ interface BaseMetaphorProps extends BaseProps {
 }
 
 export interface TriggerProps extends BaseMetaphorProps {
-  label: string;
+  label: string; 
 }
 
 export interface ToggleProps extends BaseMetaphorProps {
-  variant: "checkbox" | "radio" | "switch" | { icon_on: string; icon_off: string };
+  variant: "checkbox" | "radio" | "switch" | { icon_on: string; icon_off: string }; 
   label: string;
-  label_position?: "start" | "end";
+  label_position?: "start" | "end"; 
 }
 
 export interface InputProps extends BaseMetaphorProps {
-  mode: "text" | "numeric" | "decimal" | "tel" | "email";
-  lines?: number;
-  placeholder?: string;
+  mode: "text" | "numeric" | "decimal" | "tel" | "email"; 
+  lines?: number; 
+  placeholder?: string; 
 }
 
 export interface SliderProps extends BaseMetaphorProps {
-  show_ticks?: boolean;
-  show_track?: boolean;
-  show_value_tooltip?: boolean;
+  show_ticks?: boolean; 
+  show_track?: boolean; 
+  show_value_tooltip?: boolean; 
   orientation?: "horizontal" | "vertical";
 }
 
 export interface SelectProps extends BaseMetaphorProps {
-  variant: "dropdown" | "listbox" | "chips";
-  placeholder?: string;
-  clearable?: boolean;
+  variant: "dropdown" | "listbox" | "chips"; 
+  placeholder?: string; 
+  clearable?: boolean; 
 }
 
 // 3. Structural Containers
@@ -341,7 +358,7 @@ export interface ContainerBlock extends BaseBlock {
 export interface ContainerProps extends BaseProps {
   children: (InteractionUnit | VisualBlock)[];
   behavior?: {
-    shuffle_children?: boolean;
+    shuffle_children?: boolean; 
     pick_n?: number | null; // null means show all
   };
 }

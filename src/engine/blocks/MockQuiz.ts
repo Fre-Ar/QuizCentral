@@ -1,4 +1,4 @@
-import { QuizSchema, PageNode, InteractionUnit, ContainerBlock, TextBlock, TriggerBlock, ToggleBlock, StyleSchema, StyleProperties, StyleRegistry } from "@/engine/types/schema";
+import { QuizSchema, PageNode, InteractionUnit, ContainerBlock, TextBlock, TriggerBlock, ToggleBlock, StyleSchema, StyleProperties, StyleRegistry, TemplateDefinition, TemplateInstance } from "@/engine/types/schema";
 
 // ==========
 // Styles
@@ -293,6 +293,184 @@ const Q2: InteractionUnit = {
   },
   view: Q2_VIEW,
 }
+
+// Q3 (Template)
+const Q3_TEXT = {
+  type: "text",
+  props: {
+    content: { param: "question" },
+    styling: { classes: { param: "question_text_style" } },
+  },
+}
+
+const Q3_option = {
+  type: "toggle",
+  props: {
+    variant: "radio",
+
+    label: { var: "opt.label" },
+    label_position: "end",
+
+    styling: { classes: { param: "option_style" } },
+    
+    state_logic:{
+      active: {
+        "==": [{ var: "value" }, [{ var: "opt.value" }]],
+      }
+    },
+
+    events: {
+      on_click: { "set": [{ var: "value" }, [{ var: "opt.value" }]] },
+    },
+  },
+}
+
+const Q3_OPTIONS = {
+  type: "container",
+  props: {
+    behavior: {
+      shuffle_children: { param: "shuffle_options" },
+      pick_n: null, 
+    },
+    styling: { classes: { param: "option_container_style" } },
+
+    children: {
+      $$map: {
+        source: { param: "options" },
+        as: "opt",
+        template: Q3_option
+      },
+    }
+  }
+}
+
+const Q3_VIEW = {
+  type: "container",
+  props: {
+    behavior: {
+      shuffle_children: false,
+      pick_n: null,
+    },
+    styling:{ classes: { param: "container_style" } },
+
+    children: [ Q3_TEXT, Q3_OPTIONS ],
+  },
+}
+
+const Q3_Domain = {
+  $$map: {
+    source: { param: "options" },
+    as: "opt", 
+    template: [{ var: "opt.value" }], 
+  }
+}
+
+const Q3_TEMPLATE: TemplateDefinition = {
+  type: "template",
+  id: "tpl_mcq_single", 
+  name: "Scored MCQ",
+  parameters: {
+    question: "string", 
+    options: [
+      { label: "string", value: "any", points: "number" },
+    ],
+    container_style: ["style_id"], 
+    question_text_style: ["style_id"],
+    option_container_style: ["style_id"],
+    option_style: ["style_id"],
+
+    shuffle_options: "boolean",
+  },
+
+  structure: {
+    type: "interaction_unit",
+    domain_id: Q3_Domain, // [ [1], [2], [3], [4] ]
+
+    state: {
+      value: null,
+      visited: false,
+      required: true,
+    },
+
+    behavior: {
+      "quiz.timer": {
+        if: [
+          { "==": [{ var: "quiz.timer" }, 0] },
+          {
+            "+=": [
+              { ref: "quiz.score" },
+              {
+                $$switch: {
+                  on: { var: "value" },
+                  cases: {
+                    $$map: {
+                      source: { param: "options" },
+                      as: "opt",
+                      template: {
+                        match: { var: "opt.value" },
+                        result: { var: "opt.points" },
+                      },
+                    },
+                  },
+                  default: 0,
+                },
+              },
+            ],
+          },
+          null,
+        ],
+      },
+    },
+
+    view: Q3_VIEW,
+  }
+};
+
+
+const Q3: TemplateInstance = {
+  type: "template_instance", 
+  id: "q2",
+
+  template_id: "tpl_mcq_single",
+
+  state: {
+    required: false,
+  },
+
+  behavior: {
+    hidden: {
+      "==": [{ var: "q1.value" }, false],
+    },
+
+    listeners: {
+      "q1.value": {
+        if: [
+          { "==": [{ var: "q1.value" }, true] },
+          { set: [{ var: "required" }, true] },
+          null,
+        ],
+      }
+    }
+  },
+
+  parameters: {
+    question: "What is the capital of **France**?",
+    options: [
+      { label: "Paris", value: 1, points: 1.0 },
+      { label: "Berlin", value: 2, points: -1.0 },
+      { label: "Toulouse", value: 3, points: 0.0 },
+      { label: "Versailles", value: 4, points: 0.5 },
+    ],
+    container_style: [], // no style, default
+    question_text_style: ["text_style_id"],
+    option_container_style: ["question_container"],
+    option_style: ["green_bg", "white_text"],
+
+    shuffle_options: true,
+  },
+}
+
+
 
 // Page Schema
 const MOCK_PAGE: PageNode = {
