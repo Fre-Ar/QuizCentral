@@ -94,6 +94,23 @@ export class QuizEngine {
     });
   }
 
+  private buildLocalContext(node: BlockRuntimeState, nodes: Record<string, BlockRuntimeState>, context: EvaluationContext): EvaluationContext {
+      let contextValue = node.value;
+      // If I have a Scope (Parent IU), use its value.
+      // If not (I am the IU), use my own value.
+      if (node.scopeId && nodes[node.scopeId]) {
+        contextValue = nodes[node.scopeId].value;
+      }
+
+      // 1. Prepare Local Context (Inject 'value' for self-reference)
+      // This fixes the issue where blocks refer to {"var": "value"}
+      const localContext = { 
+        ...context, 
+        value: contextValue
+      };
+      return localContext;
+  }
+
   /**
    * The Entry Point for all User Interactions.
    */
@@ -381,16 +398,7 @@ export class QuizEngine {
 
       const node = state.nodes[id];
       // resolve the local value
-      let contextValue = node.value;
-      if (node.scopeId && state.nodes[node.scopeId]) {
-        contextValue = state.nodes[node.scopeId].value;
-      }
-
-      // Prepare Local Context (Inject 'value' for self-reference)
-      const localContext = { 
-        ...context, 
-        value: contextValue
-      };
+      const localContext = this.buildLocalContext(node, currentState.nodes, context);
 
       logTest(id, "goes ahead with logic eval under the context", localContext)
 
@@ -546,24 +554,13 @@ export class QuizEngine {
     this.buildNodeContextMap(nodes, context);
 
     // 2. Iterate all nodes to check Logic
-    Object.values(nodes).forEach(node => {
+    Object.values(nodes).forEach(node => {4
       const schemaBlock = this.schemaMap.get(node.schemaId);
       if (!schemaBlock) return;
 
       // RESOLVE THE LOCAL VALUE
-      // If I have a Scope (Parent IU), use its value.
-      // If not (I am the IU), use my own value.
-      let contextValue = node.value;
-      if (node.scopeId && nodes[node.scopeId]) {
-        contextValue = nodes[node.scopeId].value;
-      }
 
-      // 1. Prepare Local Context (Inject 'value' for self-reference)
-      // This fixes the issue where blocks refer to {"var": "value"}
-      const localContext = { 
-        ...context, 
-        value: contextValue
-      };
+      const localContext = this.buildLocalContext(node, nodes, context);
 
       let isHidden = node.computed.hidden;
       let isDisabled = node.computed.disabled;
