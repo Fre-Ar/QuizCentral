@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { UserAccount } from "@/session/types";
+import { UserAccount } from "@/engine/session/types";
 
 interface DashboardProps {
   user: UserAccount;

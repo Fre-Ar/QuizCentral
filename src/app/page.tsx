@@ -38,7 +38,7 @@ export default function Home() {
     await loadQuiz(setQuizSession, (path: string) => router.push(path));
   };
   
-
+  const commonButtonStyles = "text-white font-bold py-4 px-8 rounded";
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -48,17 +48,21 @@ export default function Home() {
           <div className="grow flex flex-col justify-center space-y-4 items-center p-4">
 
             <Link href="/access">
-              <button className="bg-uni-red text-white font-bold py-4 px-8 rounded">Access Quiz</button>
+              <button className={`bg-uni-red ${commonButtonStyles}`}>Access Quiz</button>
             </Link>
             
-              <button className="bg-uni-blue text-white font-bold py-4 px-8 rounded" onClick={handleCreateQuiz}>Create Quiz</button>
+              <button className={`bg-uni-blue ${commonButtonStyles}`} onClick={handleCreateQuiz}>Create Quiz</button>
             
-              <button className="bg-uni-blue text-white font-bold py-4 px-8 rounded" onClick={handleLoadQuiz}>Load Quiz</button>
+              <button className={`bg-uni-blue ${commonButtonStyles}`} onClick={handleLoadQuiz}>Load Quiz</button>
 
-              {!googleId && <GoogleLoginButton /> }
+              {!googleId && <GoogleLoginButton/> }
+              {googleId &&
+              <Link href="/dashboard">
+                <button className={`bg-uni-blue ${commonButtonStyles}`}>My Quizzes</button>
+              </Link>}
               
               <Link href="/test">
-                <button className="bg-uni-red text-white font-bold py-4 px-8 rounded">Test Features</button>
+                <button className={`bg-uni-red ${commonButtonStyles}`}>Test Features</button>
               </Link>
           </div>
         </div>

@@ -4,7 +4,6 @@ import React, { useEffect, useState } from "react";
 import { useGoogleId } from "@/hooks/googleId";
 
 import { QuizProvider} from "@/engine/hooks/useQuizContext";
-import { MOCK_SCHEMA, MOCK_USER_STYLES, MOCK_USER_TEMPLATES }  from "@/engine/blocks/MockQuiz";
 import { QuizRenderer }  from "@/engine/core/Renderer";
 
 import { UserAccount, QuizContext } from "@/engine/session/types";
@@ -13,7 +12,7 @@ import { MockService } from "@/engine/session/MockService";
 import Header from '@/components/header';
 import { Dashboard } from "@/components/Dashboard";
 
-export default function TestPage() {
+export default function Page() {
   // 1. App State
   const [user, setUser] = useState<UserAccount | null>(null);
   const [activeQuiz, setActiveQuiz] = useState<QuizContext | null>(null);
@@ -103,18 +102,5 @@ export default function TestPage() {
         onCreateQuiz={handleCreateQuiz} 
       />
     </div>
-  );
-
-  return (
-    <QuizProvider schema={MOCK_SCHEMA} styleRegistry={MOCK_USER_STYLES} templateRegistry={MOCK_USER_TEMPLATES}>
-      <div className="min-h-screen flex flex-col">
-        <Header />
-        <main className="grow flex justify-center">
-          <div className="flex flex-col min-w-full border-l border-r border-uni-grey mx-4 lg:mx-0">
-            <QuizRenderer />
-          </div>
-        </main>
-      </div>
-    </QuizProvider>
   );
 }

@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { supabase } from '@/lib/supabaseClient'; 
-import { QuizContext, UserAccount } from "@/session/types";
+import { QuizContext, UserAccount } from "@/engine/session/types";
 
 // Helper to convert Maps (Registries) to Plain Objects for JSONB storage
 const mapToObj = (map: Map<any, any> | undefined) => {

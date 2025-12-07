@@ -1,5 +1,5 @@
 import { QuizSchema, PageNode, InteractionUnit, ContainerBlock, TextBlock, TriggerBlock, ToggleBlock, StyleSchema, StyleProperties, StyleRegistry, TemplateDefinition, TemplateInstance, TemplateRegistry } from "@/engine/types/schema";
-import { GroupRegistry, UserAccount } from "@/session/types";
+import { GroupRegistry, UserAccount } from "@/engine/session/types";
 
 // ==========
 // Styles

@@ -1,4 +1,4 @@
-import { UserAccount, QuizContext, Group } from "@/session/types";
+import { UserAccount, QuizContext, Group } from "@/engine/session/types";
 import { StyleRegistry, TemplateRegistry } from "@/engine/types/schema";
 
 

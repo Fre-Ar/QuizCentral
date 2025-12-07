@@ -107,3 +107,14 @@ CREATE TABLE public.quiz_sessions (
   FOREIGN KEY (group_creator_id, group_id) 
     REFERENCES public.groups(creator_id, id) ON DELETE SET NULL
 );
+
+
+-- 1. Ensure the schema itself is accessible
+GRANT USAGE ON SCHEMA public TO service_role;
+GRANT USAGE ON SCHEMA public TO postgres;
+
+-- 2. Grant full access to all tables in public to the service_role
+GRANT ALL ON ALL TABLES IN SCHEMA public TO service_role;
+
+-- 3. Ensure future tables created also get these permissions
+ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON TABLES TO service_role;

@@ -2,7 +2,8 @@ import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
 import {QuizProvider} from "@/components/session-context";
-import  GoogleProvider  from "@/components/GoogleProvider";
+import { UserProvider } from "@/engine/hooks/useUserContext";
+import { GoogleOAuthProvider } from "@react-oauth/google";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -48,11 +49,13 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={inter.className}>
-        <GoogleProvider>
-          <QuizProvider>
-            {children}
-          </QuizProvider>
-        </GoogleProvider>
+        <GoogleOAuthProvider clientId = {process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID!}>
+          <UserProvider>
+            <QuizProvider>
+              {children}
+            </QuizProvider>
+          </UserProvider>
+        </GoogleOAuthProvider>
       </body>
     </html>
   );
