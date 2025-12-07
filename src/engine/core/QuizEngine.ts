@@ -111,6 +111,25 @@ export class QuizEngine {
       return localContext;
   }
 
+  private traverseSchema(
+    schema: QuizSchema, 
+    // The specific operation to run on each block
+    callback: (block: InteractionUnit | VisualBlock) => void) {
+      const visit = (block: InteractionUnit | VisualBlock) => {
+          // 1. Run the specific logic (callback)
+          callback(block);
+
+          // 2. Handle Recursion (Generic Traversal Logic)
+          if (block.type === "interaction_unit") {
+              visit((block as InteractionUnit).view);
+          } else if (block.type === "container") {
+              (block as ContainerBlock).props.children.forEach(visit);
+          }
+      };
+
+      schema.pages.forEach(p => p.blocks.forEach(visit));
+  }
+
   /**
    * The Entry Point for all User Interactions.
    */
@@ -218,55 +237,32 @@ export class QuizEngine {
   // ==========================================================================
 
   private normalizeIds(schema: QuizSchema) {
-    const visit = (block: InteractionUnit | VisualBlock) => {
-      // Generate ID if missing
-      if (!block.id) {
-        block.id = `gen_${Math.random().toString(36).substr(2, 9)}`;
-      }
-
-      // Recurse
-      if (block.type === "interaction_unit") {
-        visit((block as InteractionUnit).view);
-      } else if (block.type === "container") {
-        (block as ContainerBlock).props.children.forEach(visit);
-      }
-    };
-
-    schema.pages.forEach(p => p.blocks.forEach(visit));
+      this.traverseSchema(schema, (block) => {
+          if (!block.id) {
+              block.id = `gen_${Math.random().toString(36).substr(2, 9)}`;
+          }
+      });
   }
 
   private indexListeners(schema: QuizSchema) {
-    const visit = (block: InteractionUnit | VisualBlock) => {
-      if (block.type === "interaction_unit") {
-        const iu = block as InteractionUnit;
-        if (iu.behavior?.listeners) {
-          // Map every trigger key to this block ID
-          Object.keys(iu.behavior.listeners).forEach(triggerKey => {
-            const list = this.listenerIndex.get(triggerKey) || [];
-            list.push(iu.id);
-            this.listenerIndex.set(triggerKey, list);
-          });
-        }
-        visit(iu.view);
-      } else if (block.type === "container") {
-        (block as ContainerBlock).props.children.forEach(visit);
-      }
-    };
-    schema.pages.forEach(p => p.blocks.forEach(visit));
+      this.traverseSchema(schema, (block) => {
+          if (block.type === "interaction_unit") {
+              const iu = block as InteractionUnit;
+              if (iu.behavior?.listeners) {
+                  Object.keys(iu.behavior.listeners).forEach(triggerKey => {
+                      const list = this.listenerIndex.get(triggerKey) || [];
+                      list.push(iu.id!); 
+                      this.listenerIndex.set(triggerKey, list);
+                  });
+              }
+          }
+      });
   }
 
   private indexSchema(schema: QuizSchema) {
-    const visit = (block: InteractionUnit | VisualBlock) => {
-      if (block.id) this.schemaMap.set(block.id, block);
-      
-      if (block.type === "interaction_unit") {
-        visit((block as InteractionUnit).view);
-      } else if (block.type === "container") {
-        (block as ContainerBlock).props.children.forEach(visit);
-      }
-    };
-
-    schema.pages.forEach(p => p.blocks.forEach(visit));
+      this.traverseSchema(schema, (block) => {
+          if (block.id) this.schemaMap.set(block.id, block);
+      });
   }
 
   private hydrateState(schema: QuizSchema): QuizSessionState {
