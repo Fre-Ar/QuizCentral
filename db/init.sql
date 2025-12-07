@@ -2,7 +2,7 @@
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
 -- Define the custom ENUM type for permissions, used in the new groups table
-CREATE TYPE role_permission AS ENUM ('PLAYER', 'ADMIN', 'CREATOR');
+CREATE TYPE role_permission AS ENUM ('PLAYER', 'VIEWER', 'EDITOR');
 
 -- Drop old tables to prepare for the new structure (assuming migration or fresh setup)
 DROP TABLE IF EXISTS custom_blocks, groups, quizzes, styles, submissions, user_data, user_emails, user_groups, user_quizzes, users, variables, permissions CASCADE;
@@ -18,30 +18,31 @@ CREATE TABLE quizzes (
 );
 
 -- 2) user_data --------------------------------------------------------------
-CREATE TABLE user_data (
+CREATE TABLE users (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    username TEXT,
     email TEXT NOT NULL UNIQUE,
     created_at TIMESTAMP DEFAULT NOW(),
-    updated_at TIMESTAMP
 );
 
 -- 3) groups --------------------------------------------------------------
 CREATE TABLE groups (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  user_data_id UUID NOT NULL,
+  invited_user_id UUID NOT NULL,
   name TEXT NOT NULL,
   -- Emails are now stored as a JSONB array of player emails, collapsing the old user_emails table concept
   player_emails JSONB NOT NULL DEFAULT '[]'::jsonb,
   created_at TIMESTAMP DEFAULT NOW(),
-  FOREIGN KEY (user_data_id) REFERENCES user_data(id) ON DELETE CASCADE
+  FOREIGN KEY (invited_user_id) REFERENCES invited_users(id) ON DELETE CASCADE
 );
 
 -- The old 'user_emails' and 'user_groups' tables are now obsolete.
 
 -- 4) users ---------------------------------------------------------------
-CREATE TABLE users (
+CREATE TABLE invited_users (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   email TEXT NOT NULL,
+  permission role_permission NOT NULL,
   access_id TEXT NOT NULL UNIQUE, -- For joining a quiz session
   created_at TIMESTAMP DEFAULT NOW()
 );
@@ -98,7 +99,7 @@ CREATE TABLE group_quiz_roles (
     group_id UUID NOT NULL,
     quiz_id UUID NOT NULL,
     -- The role that ALL members of this group will have on this specific quiz
-    role role_permission DEFAULT 'PLAYER' NOT NULL,
+    permission role_permission NOT NULL,
     created_at TIMESTAMP DEFAULT NOW(),
 
     -- Ensures a group can only be linked to a quiz once
