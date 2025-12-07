@@ -1,4 +1,5 @@
 import { QuizSchema, PageNode, InteractionUnit, ContainerBlock, TextBlock, TriggerBlock, ToggleBlock, StyleSchema, StyleProperties, StyleRegistry, TemplateDefinition, TemplateInstance, TemplateRegistry } from "@/engine/types/schema";
+import { GroupRegistry, UserAccount } from "@/session/types";
 
 // ==========
 // Styles
@@ -719,3 +720,22 @@ const TEMPLATES = [Q3_TEMPLATE, Q5_TEMPLATE]
 export const MOCK_USER_TEMPLATES: TemplateRegistry = new Map(
   TEMPLATES.map((template) => [template.id, template])
 );
+
+export const MOCK_USER_GROUPS: GroupRegistry = new Map();
+
+
+// --------- USER ACCOUNT --------------
+
+
+export const MOCK_USER: UserAccount = {
+  googleId: "108896719939131618386",
+  email: "frear2002@gmail.com",
+  userName: "Professor X",
+  createdAt: new Date().toISOString(),
+  quizzes: [
+    { id: "quiz_001", title: "An example Quiz" }
+  ],
+  styles: MOCK_USER_STYLES,
+  templates: MOCK_USER_TEMPLATES, // In real app, this comes from DB
+  groups: MOCK_USER_GROUPS
+};
