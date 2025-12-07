@@ -84,6 +84,18 @@ export class QuizEngine {
     return this.schemaMap.get(id);
   }
 
+  private buildNodeContextMap(nodes: Record<string, BlockRuntimeState>): EvaluationContext['nodes'] {
+    const nodeContext: EvaluationContext['nodes'] = {};
+    Object.values(nodes).forEach(n => {
+        // Maps 'id' to the object containing 'value' and the 'computed' properties.
+        nodeContext[n.id] = { 
+            value: n.value, 
+            ...n.computed 
+        };
+    });
+    return nodeContext;
+  }
+
   /**
    * The Entry Point for all User Interactions.
    */
@@ -367,11 +379,9 @@ export class QuizEngine {
         // Inject Self Value
         value: currentState.nodes[id]?.value ?? null
       };
-
+      
       // Map nodes (Optimization: You could incrementally update this, but re-mapping is safer)
-      Object.values(currentState.nodes).forEach(n => {
-        context.nodes[n.id] = { value: n.value, ...n.computed };
-      });
+      context.nodes = this.buildNodeContextMap(currentState.nodes);
 
       const node = state.nodes[id];
       // resolve the local value
@@ -483,10 +493,9 @@ export class QuizEngine {
         globals: state.variables,
         nodes: {}
       };
-      Object.values(state.nodes).forEach(n => {
-        context.nodes[n.id] = { value: n.value, ...n.computed };
-      });
 
+      context.nodes = this.buildNodeContextMap(state.nodes);
+      
       // Special handling: if target is "value", we need the local node's value
       let baseValue;
       if (target === "value") {
@@ -538,9 +547,7 @@ export class QuizEngine {
     };
 
     // Optimize: Map values for the evaluator
-    Object.values(nodes).forEach(n => {
-      context.nodes[n.id] = { value: n.value, ...n.computed };
-    });
+    context.nodes = this.buildNodeContextMap(nodes);
 
     // 2. Iterate all nodes to check Logic
     Object.values(nodes).forEach(node => {
@@ -642,9 +649,7 @@ export class QuizEngine {
       // Inject "value" if the contextId refers to a node with a value
       value: state.nodes[contextId]?.value 
     };
-    Object.values(state.nodes).forEach(n => {
-      context.nodes[n.id] = { value: n.value, ...n.computed };
-    });
+    context.nodes = this.buildNodeContextMap(state.nodes);
 
     // 2. Evaluate
     // This runs the LogicEvaluator. 
