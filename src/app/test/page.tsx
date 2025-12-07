@@ -23,6 +23,7 @@ export default function TestPage() {
   const { googleId, setGoogleId } = useGoogleId();
   if (!googleId) {
     console.warn("No googleId, please Log In");
+    // TODO: Add proper guardrails to fail gracefully
   }
   
 

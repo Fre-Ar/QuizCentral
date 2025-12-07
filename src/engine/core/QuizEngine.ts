@@ -265,17 +265,23 @@ export class QuizEngine {
       });
   }
 
-  private hydrateState(schema: QuizSchema): QuizSessionState {
+  private hydrateState(schema: QuizSchema, savedSession?: any): QuizSessionState {
     const nodes: Record<RuntimeID, BlockRuntimeState> = {};
 
     // 1. Initialize Globals from Schema
     const variables: Record<string, any> = {};
 
+    // Load defaults from schema
     if (schema.state) {
       Object.entries(schema.state).forEach(([key, definition]) => {
         // Namespace them under "quiz." so {"var": "quiz.score"} works
         variables[`quiz.${key}`] = definition.default;
       });
+    }
+
+    // OVERRIDE with Saved Session Variables
+    if (savedSession?.variables) {
+      Object.assign(variables, savedSession.variables);
     }
 
     const processBlock = (block: InteractionUnit | VisualBlock, currentScopeId?: string): RuntimeID => {
@@ -292,7 +298,8 @@ export class QuizEngine {
         id: id,
         schemaId: block.id || id,
         scopeId: currentScopeId,
-        value: null,
+        // OVERRIDE with Saved Answer if exists
+        value: savedSession?.answers?.[id] ?? null,
         visited: false,
         touched: false,
         validation: { isValid: true, errors: [] },
@@ -339,14 +346,17 @@ export class QuizEngine {
       page.blocks.forEach(block => processBlock(block));
     });
 
+    // 3. Restore Navigation
+    const startStep = savedSession?.current_step_id || schema.pages[0]?.id || "";
+
     return {
       sessionId: `sess_${Date.now()}`,
       schemaId: schema.id,
       startTime: Date.now(),
       updatedAt: Date.now(),
       status: "active",
-      currentStepId: schema.pages[0]?.id || "",
-      history: [schema.pages[0]?.id || ""],
+      currentStepId: startStep,
+      history: [schema.pages[0]?.id || ""], //TODO: Add support for loading history
       variables: variables,
       nodes: nodes
     };
