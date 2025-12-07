@@ -133,8 +133,6 @@ export class QuizEngine {
 
         // 3. Process Listeners (Side Effects)
         // e.g. "q1.value" changed -> Run "q2" listeners
-        this.processListeners(`${action.id}.value`, action.value);
-        // e.g. "q1.value" changed -> Run "q2" listeners
         const sideEffects = this.processListeners(`${action.id}.value`, action.value);
         break;
       }
