@@ -11,27 +11,38 @@ import { MockService } from "@/engine/session/MockService";
 
 import Header from '@/components/header';
 import { Dashboard } from "@/components/Dashboard";
+import { useUserContext } from "@/engine/hooks/useUserContext";
+import { fetchUserAccount } from "@/lib/db-utils";
 
 export default function Page() {
   // 1. App State
-  const [user, setUser] = useState<UserAccount | null>(null);
+  const [ user, setUser ] = useState<UserAccount | null>(null);
   const [activeQuiz, setActiveQuiz] = useState<QuizContext | null>(null);
   const [loading, setLoading] = useState(true);
-
-  // 2. Initial User Fetch (Simulate Login)
   const { googleId, setGoogleId } = useGoogleId();
-  if (!googleId) {
-    console.warn("No googleId, please Log In");
-    // TODO: Add proper guardrails to fail gracefully
-  }
-  
 
   useEffect(() => {
     MockService.getUser(googleId!).then((u) => {
       setUser(u);
       setLoading(false);
+    })
+  }, []);
+
+  // 2. Initial User Fetch
+  //const { user, setUser } = useUserContext();
+
+  /*if (!user) {
+  const { googleId, setGoogleId } = useGoogleId();
+    if (!googleId) console.warn("No googleId, please Log In"); // TODO: Add guardrails to fail gracefully
+
+
+
+    fetchUserAccount(googleId!).then((u) => {
+     setUser(u);
+     setLoading(false);
     });
   }, []);
+  } else setLoading(false);*/
 
   // 3. Handlers
   const handleSelectQuiz = async (quizId: string) => {

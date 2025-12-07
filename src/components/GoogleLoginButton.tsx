@@ -7,6 +7,7 @@ import { useRouter } from "next/navigation";
 import { useEffect } from "react";  
 import { logTest } from "@/lib/utils";
 import { supabase } from "@/lib/supabaseClient";
+import { UserAccount } from "@/engine/session/types";
 
 interface LoginButtonProps {
   style?: string;
@@ -29,15 +30,16 @@ const GoogleLoginButton: React.FC<LoginButtonProps> = () => {
 
         if (!res.ok) throw new Error("Login API Failed");
 
-        const { user } = await res.json();
+        const { user } = (await res.json()) as { user: UserAccount };
 
-        // 2. Update Global State (No re-fetch needed!)
+        // 2. Update Global State 
+        
         setUser(user);
 
         // 3. Set Cookie for persistence
         document.cookie = `googleId=${user.googleId}; path=/; max-age=${7 * 24 * 60 * 60}; secure; samesite=strict`;
 
-        // 4. Redirect to Dashboard
+        // 4. Reload page
         router.push("/"); 
 
       } catch (err) {

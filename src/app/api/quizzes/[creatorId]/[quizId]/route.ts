@@ -5,7 +5,7 @@ export async function GET(
   request: Request,
   { params }: { params: { creatorId: string; quizId: string } }
 ) {
-  const { creatorId, quizId } = params;
+  const { creatorId, quizId } = await params;
 
   // 1. Fetch Quiz Definition
   const { data: quiz, error: quizError } = await supabase

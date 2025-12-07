@@ -1,11 +1,13 @@
 import { NextResponse } from 'next/server';
 import { supabase } from '@/lib/supabaseClient';
+import { Group } from '@/engine/session/types';
 
 export async function GET(
   request: Request,
   { params }: { params: { googleId: string } }
 ) {
-  const googleId = params.googleId;
+  const param = await params;
+  const googleId = param.googleId;
 
   // 1. Fetch User Profile & Assets
   const { data: user, error: userError } = await supabase
@@ -32,16 +34,23 @@ export async function GET(
   const { data: groups, error: groupError } = await supabase
     .from('groups')
     .select('*')
-    .eq('creator_id', googleId);
+    .eq('creator_id', user.googleId);
 
   if (groupError) {
     return NextResponse.json({ error: 'Failed to load groups' }, { status: 500 });
   }
 
   // 4. Construct Response (Groups as Object Map for JSON transfer)
-  const groupsMap: Record<string, any> = {};
+  const groupsMap: Map<string, Group> = new Map();
   groups.forEach((g: any) => {
-    groupsMap[g.id] = g;
+    groupsMap.set(
+      g.id,
+      {
+        id: g.id, // id can be human readable as it is uniquely identified by its user creator and group id
+        name: g.name, 
+        emails: g.emails,
+        settings: g.settings
+      });
   });
 
   const responsePayload = {

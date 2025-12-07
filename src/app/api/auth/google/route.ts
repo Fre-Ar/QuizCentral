@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { supabase } from "@/lib/supabaseServer";
+import { Group, UserAccount } from "@/engine/session/types";
 
 export async function POST(req: Request) {
   try {
@@ -60,12 +61,38 @@ export async function POST(req: Request) {
       .select("id, title")
       .eq("creator_id", user.googleId);
 
+    // 3. Fetch Groups
+      const { data: groups, error: groupError } = await supabase
+        .from('groups')
+        .select('*')
+        .eq('creator_id', user.googleId);
+    
+      if (groupError) {
+        return NextResponse.json({ error: 'Failed to load groups' }, { status: 500 });
+      }
+    
+      // 4. Construct Response (Groups as Object Map for JSON transfer)
+      const groupsMap: Map<string, Group> = new Map();
+      groups.forEach((g: any) => {
+        groupsMap.set(
+          g.id,
+          {
+            id: g.id, // id can be human readable as it is uniquely identified by its user creator and group id
+            name: g.name, 
+            emails: g.emails,
+            settings: g.settings
+          });
+      });
+
     // 4. Construct Final User Object
-    const fullUser = {
-      ...userRow,
+    const fullUser: UserAccount = {
+      googleId: userRow.google_id,
+      email: userRow.email,
+      userName: userRow.name,
+      createdAt: userRow.created_at,
       styles: userRow.styles || {},       // Handle JSONB -> Object
       templates: userRow.templates || {}, // Handle JSONB -> Object
-      groups: {}, // Load groups lazily later or fetch here if critical
+      groups: groupsMap, 
       quizzes: quizzes || []
     };
 
