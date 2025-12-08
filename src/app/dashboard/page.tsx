@@ -72,7 +72,6 @@ export default function Page() {
       <div className="min-h-screen flex flex-col items-center justify-center p-4">
         <h2 className="text-xl font-bold mb-4">Please Log In</h2>
         <p className="text-gray-500 mb-6">You need an account to view the dashboard.</p>
-        {/* Maybe render <GoogleLoginButton /> here directly */}
         <div className="w-full max-w-sm">
           <GoogleLoginButton />
         </div>

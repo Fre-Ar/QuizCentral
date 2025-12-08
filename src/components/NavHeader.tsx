@@ -17,72 +17,78 @@ export default function NavMenu({tab, id}:NavProps) {
   const handleToggle = (newIsOn: boolean) => {
     setIsOn(newIsOn);
     if (newIsOn) {
-      router.push(`/quiz/${id}`); // TODO: add quiz preview
+      router.push(`/quiz/${id}/preview`); // TODO: add quiz preview
     } else {
       router.push(`/quiz/${id}`);
     }
   }
 
-  
+  const navBtnClass = (active: boolean) => 
+    `py-2 px-4 rounded transition-colors duration-200 font-medium ${
+      active ? "bg-uni-pink text-white" : "hover:bg-white/20 text-white/90"
+    }`;
 
   return (
     <div className="bg-uni-red text-white">
-        <div className="container mx-auto flex items-center ">
-          <div className="flex-1" />
-            
-            {/* Navigation Header */}
-            <nav className="border-b px-8 py-3 flex items-center justify-between">
-              <button 
-                onClick={() => router.push("/dashboard")}
-                className="text-white hover:text-gray-900 flex items-center gap-2"
-              >
-                ← Back to Dashboard
-              </button>
-              <div className="h-6 w-px mx-2"></div>
-              <span className="font-semibold text-white"></span>
-              <span className="font-mono text-sm text-white">
-                ID: {id}
-              </span>
-            </nav>
+      <div className="flex justify-between">
 
-            <div className="flex space-x-4">
-              {!isOn && (<>
-                <Link href={`/quiz/${id}`}>
-                  <button className={`py-2 px-4 ${tab==='create'? "bg-uni-pink" : ""}`}>Create</button>
-                </Link>
-                <Link href={`/quiz/${id}`}>
-                  <button className={`py-2 px-4 ${tab==='ai'? "bg-uni-pink" : ""}`}>AI</button>
-                </Link>
-                <Link href={`/quiz/${id}`}>
-                  <button className={`py-2 px-4 ${tab==='settings'? "bg-uni-pink" : ""}`}>Settings</button>
-                </Link>
-                <Link href={`/quiz/${id}`}>
-                  <button className={`py-2 px-4 ${tab==='users'? "bg-uni-pink" : ""}`}>Manage Users</button>
-                </Link>
-                <Link href={`/quiz/${id}`}>
-                  <button className={`py-2 px-4 ${tab==='launch'? "bg-uni-pink" : ""}`}>Launch</button>
-                </Link>
-              </>)}
-              {isOn && (<>
-                <Link href={`/quiz/${id}/preview`}>
-                  <button className={`py-2 px-4 ${tab==='fridge'? "bg-uni-pink" : ""}`}>Samsung Fridge</button>
-                </Link>
-                <Link href={`/quiz/${id}/preview`}>
-                  <button className={`py-2 px-4 ${tab==='mobile'? "bg-uni-pink" : ""}`}>Mobile</button>
-                </Link>
-                <Link href={`/quiz/${id}/preview`}>
-                  <button className={`py-2 px-4 ${tab==='tablet'? "bg-uni-pink" : ""}`}>Tablet</button>
-                </Link>
-                <Link href={`/quiz/${id}/preview`}>
-                  <button className={`py-2 px-4 ${tab==='desktop'? "bg-uni-pink" : ""}`}>Desktop</button>
-                </Link>
-              </>)}
-            </div>
-            <div className="flex-1 flex justify-end items-center">
-              Preview Quiz  
-            <div className="px-4"><ToggleButton isOn={isOn} onToggle={handleToggle}/></div>   
-          </div>
+        {/* Navigation Header */}
+        <nav className="px-8 flex flex-1 items-center justify-start py-0">
+          <button
+            onClick={() => router.push("/dashboard")}
+            className="flex items-center gap-2 text-sm font-medium hover:text-white/80 transition-colors"
+          >
+            <span>←</span> Back to Dashboard
+          </button>
+          <div className="h-6 w-px mx-2"></div>
+          <span className="font-semibold text-white"></span>
+          <span className="hidden md:block font-mono text-xs text-white/60 select-all">
+            ID: {id}
+          </span>
+        </nav>
+
+        <div className="flex flex-1 items-center gap-2 shrink-0 text-nowrap">
+          {!isOn && (<>
+            <Link href={`/quiz/${id}`}>
+              <button className={`py-2 px-4  ${tab==='create'? "bg-uni-pink" : ""}`}>Create</button>
+            </Link>
+            <Link href={`/quiz/${id}`}>
+              <button className={`py-2 px-4 ${tab==='ai'? "bg-uni-pink" : ""}`}>AI</button>
+            </Link>
+            <Link href={`/quiz/${id}`}>
+              <button className={`py-2 px-4 ${tab==='settings'? "bg-uni-pink" : ""}`}>Settings</button>
+            </Link>
+            <Link href={`/quiz/${id}`}>
+              <button className={`py-2 px-4 ${tab==='users'? "bg-uni-pink" : ""}`}>Manage Users</button>
+            </Link>
+            <Link href={`/quiz/${id}`}>
+              <button className={`py-2 px-4 ${tab==='launch'? "bg-uni-pink" : ""}`}>Launch</button>
+            </Link>
+          </>)}
+          {isOn && (<>
+            <Link href={`/quiz/${id}/preview`}>
+              <button className={`py-2 px-4 ${tab==='fridge'? "bg-uni-pink" : ""}`}>Samsung Fridge</button>
+            </Link>
+            <Link href={`/quiz/${id}/preview`}>
+              <button className={`py-2 px-4 ${tab==='mobile'? "bg-uni-pink" : ""}`}>Mobile</button>
+            </Link>
+            <Link href={`/quiz/${id}/preview`}>
+              <button className={`py-2 px-4 ${tab==='tablet'? "bg-uni-pink" : ""}`}>Tablet</button>
+            </Link>
+            <Link href={`/quiz/${id}/preview`}>
+              <button className={`py-2 px-4 ${tab==='desktop'? "bg-uni-pink" : ""}`}>Desktop</button>
+            </Link>
+          </>)}
         </div>
+
+        <div className="flex flex-1 justify-end items-center px-8">
+          Preview Quiz  
+          <div className="px-4">
+            <ToggleButton isOn={isOn} onToggle={handleToggle}/>
+          </div>  
+        </div>
+
+      </div>
     </div>
   );
 };
