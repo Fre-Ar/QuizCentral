@@ -1,14 +1,26 @@
 import { UserAccount, QuizContext, Group } from "@/engine/session/types";
 import { StyleProperties, StyleRegistry, TemplateDefinition, TemplateRegistry } from "@/engine/types/schema";
 
+// Helper to convert Maps (Registries) to Plain Objects for JSONB storage
+const mapToObj = (map: Map<any, any> | undefined) => {
+  if (!map || !(map instanceof Map)) return {};
+  return Object.fromEntries(map);
+};
 
 export async function saveQuizToDatabase(quizCtx: QuizContext) {
+  const replacer = (key: string, value: any) => {
+    if (value instanceof Map) {
+      return Object.fromEntries(value);
+    }
+    return value;
+  };
+
   try {
     // TODO: change api route to fit REST API conventions
     const response = await fetch("/api/quiz/save", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ quizJson: quizCtx }),
+      body: JSON.stringify({ quizJson: quizCtx }, replacer),
     });
 
     const data = await response.json();

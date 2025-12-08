@@ -1,5 +1,5 @@
 import { UserAccount, QuizContext } from "./types"
-import { StyleRegistry, TemplateRegistry, QuizSchema } from "@/engine/types/schema";
+import { StyleRegistry, TemplateRegistry, QuizSchema, InteractionUnit, VisualBlock } from "@/engine/types/schema";
 import { MOCK_SCHEMA, MOCK_USER } from "@/engine/blocks/MockQuiz"; 
 
 // --- THE MOCK DB ---
@@ -19,21 +19,29 @@ export const MockService = {
   /**
    * Fetch a specific Quiz Schema
    */
-  async getQuizContext(quizId: string, user: UserAccount): Promise<QuizContext> {
-    console.log(`[MockDB] Fetching Quiz ${quizId}...`);
+  async getQuizContext(pageBlocks: any[], user: UserAccount): Promise<QuizContext> {
     await new Promise(r => setTimeout(r, 300));
 
-    // In a real app, we fetch the JSON from DB. 
-    // Here we return our MOCK_SCHEMA regardless of ID for demo purposes.
-    // We clone it and assign the requested ID to simulate fetching different quizzes.
-    const schemaClone = JSON.parse(JSON.stringify(MOCK_SCHEMA));
-    // schemaClone.id = quizId;
-    // schemaClone.meta.title = user.quizzes.find(q => q.id === quizId)?.title || "Untitled Quiz";
+
+    const schemaClone = MOCK_SCHEMA;
+    const newSchema: QuizSchema = {
+      id: schemaClone.id,
+      meta: schemaClone.meta,
+      config: schemaClone.config,
+      state: schemaClone.state,
+      pages: [
+        {
+          id: schemaClone.pages[0].id,
+          title: schemaClone.pages[0].title,
+          blocks: pageBlocks
+        }
+      ]
+    }
 
     return {
-      quizId: quizId,
+      quizId: newSchema.id,
       quizCreator: user,
-      quizSchema: schemaClone,
+      quizSchema: newSchema,
     
       groups: [],
       openSessions: [], 

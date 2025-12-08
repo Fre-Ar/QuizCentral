@@ -17,16 +17,11 @@ export default function NavMenu({tab, id}:NavProps) {
   const handleToggle = (newIsOn: boolean) => {
     setIsOn(newIsOn);
     if (newIsOn) {
-      router.push(`/quiz/${id}/preview`); // TODO: add quiz preview
+      router.push(`/quiz/${id}/preview`);
     } else {
       router.push(`/quiz/${id}`);
     }
   }
-
-  const navBtnClass = (active: boolean) => 
-    `py-2 px-4 rounded transition-colors duration-200 font-medium ${
-      active ? "bg-uni-pink text-white" : "hover:bg-white/20 text-white/90"
-    }`;
 
   return (
     <div className="bg-uni-red text-white">

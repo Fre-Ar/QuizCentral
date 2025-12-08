@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState} from 'react';
+import React, { useState, useEffect} from 'react';
 
 import Header from '@/components/header';
 import NavMenu from '@/components/nav-menu';
@@ -12,6 +12,11 @@ import { FaCog, FaCodeBranch, FaCss3Alt } from "react-icons/fa";
 import { useDragging } from '@/hooks/resizing';
 import { useQuizSession } from '@/hooks/quiz';
 import { useOpenAPISending } from '@/hooks/ai';
+import { QuizContext, UserAccount } from '@/engine/session/types';
+import { MockService } from '@/engine/session/MockService';
+import { QuizProvider } from '@/engine/hooks/useQuizContext';
+import { QuizRenderer } from '@/engine/core/Renderer';
+import { MOCK_USER } from '@/engine/blocks/MockQuiz';
 
 export default function Page() {
 
@@ -20,9 +25,26 @@ export default function Page() {
   const [apiKey, setApiKey] = useState<string | null>(null);
   const { input, setInput, reply, isLoading, sendPrompt } = useOpenAPISending(apiKey);
   
+  // 1. App State
+  const [user, setUser] = useState<UserAccount | null>(null);
+  const [activeQuiz, setActiveQuiz] = useState<QuizContext | null>(null);
+  const [loading, setLoading] = useState(true);
+
+
+  useEffect(() => {
+    setUser(MOCK_USER);
+    setLoading(false);
+  }, []);
+  
 
   const handleSend = async () => { 
-    await sendPrompt();
+    const pageBlocks = await sendPrompt();
+    console.log('TYPE', typeof pageBlocks);
+    if (pageBlocks && user) {
+      MockService.getQuizContext(pageBlocks, user).then((c) => {
+      setActiveQuiz(c);
+    });
+    }
   };
 
   return (
@@ -77,10 +99,20 @@ export default function Page() {
 
             {isLoading ? 'Sending...' : ''}
 
-            {reply && (
+            {false && (
               <div className="border rounded p-2 whitespace-pre-wrap text-wrap">
                 {reply}
               </div>
+            )}
+
+            {activeQuiz && user && (
+             <QuizProvider 
+              schema={activeQuiz.quizSchema} 
+              styleRegistry={user.styles}
+              templateRegistry={user.templates}
+            >
+              <QuizRenderer renderDebug={true}/>
+            </QuizProvider>
             )}
           </div>
 

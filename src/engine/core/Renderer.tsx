@@ -43,6 +43,7 @@ export const QuizRenderer: React.FC<RenderProps> = ({ renderDebug }) => {
       {/* RIGHT: THE BRAIN (Debug) */}
       {renderDebug && <div className="w-96 bg-black text-green-500 border border-gray-100 p-6 rounded-xl font-mono text-xs overflow-auto h-[80vh]">
         <h3 className="text-white font-bold mb-4 uppercase tracking-wider">Engine State</h3>
+        <h3 className="text-white font-bold mb-4 uppercase tracking-wider">Quiz Score: {session.variables["quiz.score"]}</h3>
         <pre>{JSON.stringify(session, null, 2)}</pre>
       </div>}
     </div>

@@ -728,8 +728,8 @@ export const MOCK_USER_GROUPS: GroupRegistry = new Map();
 
 
 export const MOCK_USER: UserAccount = {
-  googleId: "108896719939131618386",
-  email: "frear2002@gmail.com",
+  googleId: "",
+  email: "example@gmail.com",
   userName: "Professor X",
   createdAt: new Date().toISOString(),
   quizzes: [

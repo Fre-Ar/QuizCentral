@@ -3,22 +3,22 @@ import { QuizEngine } from "../core/QuizEngine";
 import { QuizSchema, StyleRegistry, TemplateRegistry } from "../types/schema";
 import { TemplateCompiler } from "../core/TemplateCompiler";
 import { logTest } from "@/lib/utils";
+import { QuizContext } from "../session/types";
 
 interface QuizContextValue {
+  ctx: QuizContext;
   engine: QuizEngine;
   styleRegistry: StyleRegistry;
 }
 
-const QuizContext = createContext<QuizContextValue | null>(null);
+const QuizContextVal = createContext<QuizContextValue | null>(null);
 
 interface QuizProviderProps {
-  schema: QuizSchema;
-  styleRegistry?: StyleRegistry;    
-  templateRegistry?: TemplateRegistry;
+  ctx: QuizContext;
   children: React.ReactNode;
 }
 
-export const QuizProvider: React.FC<QuizProviderProps> = ({ schema, styleRegistry, templateRegistry, children }) => {
+export const QuizProvider: React.FC<QuizProviderProps> = ({ ctx, children }) => {
   // Use a ref to store the engine instance so it survives re-renders without being recreated.
   // We cannot use useMemo for side-effects like initializing the engine (React strict mode constraints).
   const engineRef = useRef<QuizEngine | null>(null);
@@ -29,15 +29,14 @@ export const QuizProvider: React.FC<QuizProviderProps> = ({ schema, styleRegistr
   // 1. COMPILE (Standardized)
   const runtimeSchema = useMemo(() => {
     // If no registry is provided, use the raw schema
-    if (!templateRegistry || templateRegistry.size === 0) return schema;
+    if (!ctx.quizCreator.templates || ctx.quizCreator.templates.size === 0) return ctx.quizSchema;
     
-    console.log("[QuizProvider] Compiling with Registry...");
-    const compiler = new TemplateCompiler(templateRegistry);
-    const newSchema = compiler.compile(schema);
-    logTest("[QuizProvider] Compilation Result:", newSchema);
+
+    const compiler = new TemplateCompiler(ctx.quizCreator.templates);
+    const newSchema = compiler.compile(ctx.quizSchema);
     return newSchema
 
-  }, [schema, templateRegistry]);
+  }, [ctx]);
 
   // 2. INIT ENGINE
   if (!engineRef.current) {
@@ -58,14 +57,14 @@ export const QuizProvider: React.FC<QuizProviderProps> = ({ schema, styleRegistr
   }
 
   return (
-    <QuizContext.Provider value={{ engine: engineRef.current, styleRegistry: styleRegistry || new Map() }}>
+    <QuizContextVal.Provider value={{ engine: engineRef.current, ctx: ctx, styleRegistry: ctx.quizCreator.styles || new Map() }}>
       {children}
-    </QuizContext.Provider>
+    </QuizContextVal.Provider>
   );
 };
 
 export const useQuizContext = () => {
-  const ctx = useContext(QuizContext);
+  const ctx = useContext(QuizContextVal);
   if (!ctx) throw new Error("useQuizContext must be used within a QuizProvider");
   return ctx;
 };

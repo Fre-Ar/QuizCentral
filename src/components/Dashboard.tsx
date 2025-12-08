@@ -5,9 +5,10 @@ interface DashboardProps {
   user: UserAccount;
   onSelectQuiz: (id: string) => void;
   onCreateQuiz: (title: string) => void;
+  addMockQuiz: () => void;
 }
 
-export const Dashboard: React.FC<DashboardProps> = ({ user, onSelectQuiz, onCreateQuiz }) => {
+export const Dashboard: React.FC<DashboardProps> = ({ user, onSelectQuiz, onCreateQuiz, addMockQuiz }) => {
   const [newTitle, setNewTitle] = useState("");
 
   return (
@@ -71,6 +72,14 @@ export const Dashboard: React.FC<DashboardProps> = ({ user, onSelectQuiz, onCrea
             >
               Start Building
             </button>
+
+            <button 
+              onClick={() => addMockQuiz()}
+              className="w-full py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              Add Mock Quiz
+            </button>
+
           </div>
         </div>
 

@@ -1,17 +1,15 @@
 import { NextResponse } from 'next/server';
-import { supabase } from '@/lib/supabaseClient'; 
-import { QuizContext, UserAccount } from "@/engine/session/types";
+import { supabase } from '@/lib/supabaseServer'; 
+import { QuizContext, UserAccount, Group } from "@/engine/session/types";
 
-// Helper to convert Maps (Registries) to Plain Objects for JSONB storage
-const mapToObj = (map: Map<any, any> | undefined) => {
-  if (!map || !(map instanceof Map)) return {};
-  return Object.fromEntries(map);
-};
+
 
 export async function POST(request: Request) {
   try {
-    const { quizJson: quizCtx } = (await request.json()) as { quizJson: QuizContext };
+    const { quizJson: quizCtx } = await request.json();
     const creator = quizCtx.quizCreator;
+
+    console.log(creator);
 
     // ---------------------------------------------------------
     // 1. SAVE USER & ASSETS (Styles, Templates)
@@ -26,8 +24,8 @@ export async function POST(request: Request) {
         username: creator.userName,
         
         // Convert Maps to JSON Objects
-        styles: mapToObj(creator.styles),
-        templates: mapToObj(creator.templates),
+        styles: creator.styles,
+        templates: creator.templates,
         
         // Note: We don't save creator.quizzes metadata list here; 
         // that is derived from the 'quizzes' table queries.
@@ -41,12 +39,12 @@ export async function POST(request: Request) {
     // ---------------------------------------------------------
     // We iterate through the User's GroupRegistry to ensure all group definitions exist.
     if (creator.groups && creator.groups.size > 0) {
-      const groupsPayload = Array.from(creator.groups.values()).map(group => ({
+      const groupsPayload = Array.from(creator.groups.values()).map(group=> ({
         creator_id: creator.googleId,
-        id: group.id, // Human readable ID
-        name: group.name,
-        emails: group.emails, // JSONB array of InvitedUser
-        settings: group.settings // JSONB object
+        id: (group as Group).id, // Human readable ID
+        name: (group as Group).name,
+        emails: (group as Group).emails, // JSONB array of InvitedUser
+        settings: (group as Group).settings // JSONB object
       }));
 
       const { error: groupError } = await supabase
@@ -92,7 +90,7 @@ export async function POST(request: Request) {
         .match({ quiz_creator_id: creator.googleId, quiz_id: quizCtx.quizId });
 
       // Insert new links
-      const linksPayload = quizCtx.groups.map(group => ({
+      const linksPayload = Array.from(quizCtx.groups).map(group => ({
         // Quiz Key
         quiz_creator_id: creator.googleId,
         quiz_id: quizCtx.quizId,
@@ -100,7 +98,7 @@ export async function POST(request: Request) {
         // Group Key 
         // (Assuming the creator of the quiz is also the owner of the group for this MVP)
         group_creator_id: creator.googleId, 
-        group_id: group.id 
+        group_id: (group as Group).id 
       }));
 
       const { error: linkError } = await supabase

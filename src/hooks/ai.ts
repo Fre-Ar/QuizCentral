@@ -122,8 +122,31 @@ export function useOpenAPISending(apiKey: string | null){
         });
 
         const text = completion.choices[0]?.message?.content ?? '';
-        const responseJson = JSON.parse(text);
-        const blocks =(responseJson as Array<TemplateInstance>)
+
+        let responseJson: Array<TemplateInstance> = [];
+
+        // 1. Find the first '[' and the last ']'
+        const startIndex = text.indexOf('[');
+        const endIndex = text.lastIndexOf(']');
+
+        // 2. Check if both brackets exist and are in the correct order
+        if (startIndex !== -1 && endIndex !== -1 && endIndex > startIndex) {
+            try {
+                // 3. Extract the substring (endIndex + 1 includes the closing bracket)
+                const jsonString = text.substring(startIndex, endIndex + 1);
+                
+                // 4. Parse the cleaned string
+                responseJson = JSON.parse(jsonString) as Array<TemplateInstance>;
+                
+            } catch (error) {
+                console.error("Failed to parse JSON:", error);
+                // Handle the error (e.g., fallback or retry)
+            }
+        } else {
+            console.warn("No JSON array found in response");
+        }
+
+        const blocks = responseJson;
 
         
         console.log('OpenAI response:', text);

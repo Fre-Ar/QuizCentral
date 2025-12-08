@@ -6,12 +6,13 @@ import { useRouter } from "next/navigation";
 import { QuizProvider} from "@/engine/hooks/useQuizContext";
 import { QuizRenderer }  from "@/engine/core/Renderer";
 
-import { QuizContext } from "@/engine/session/types";
+import { QuizContext, UserAccount } from "@/engine/session/types";
 
 import Header from '@/components/header';
 import { Dashboard } from "@/components/Dashboard";
 import { useUserContext } from "@/engine/hooks/useUserContext";
-import { fetchQuizContext, createQuiz } from "@/lib/db-utils";
+import { fetchQuizContext, createQuiz, saveQuizToDatabase } from "@/lib/db-utils";
+import { MOCK_SCHEMA, MOCK_USER_STYLES, MOCK_USER_TEMPLATES } from "@/engine/blocks/MockQuiz";
 import { logTest } from "@/lib/utils";
 import GoogleLoginButton from "@/components/GoogleLoginButton";
 
@@ -26,6 +27,45 @@ export default function Page() {
   const handleSelectQuiz = (quizId: string) => {
     // Simply push to the new route. The new page handles the fetching.
     router.push(`/quiz/${quizId}`);
+  };
+
+  const handleMockQuiz = async () => {
+    if (!user) return;
+    setIsCreating(true);
+
+    // Update local cache so dashboard list is correct when we return
+    const updatedUser: UserAccount = {
+      googleId: user.googleId,
+      email: user.email,
+      userName: user.userName,
+      createdAt: user.createdAt,
+      quizzes: [
+        ...user.quizzes, 
+        { id: MOCK_SCHEMA.id, title: MOCK_SCHEMA.meta.title }
+      ],
+      styles: MOCK_USER_STYLES,
+      templates: MOCK_USER_TEMPLATES,
+      groups: user.groups
+    };
+    setUser(updatedUser);
+
+    console.log('USER GOT THESE:', updatedUser)
+
+    const newCtx: QuizContext = {
+      quizId: MOCK_SCHEMA.id,
+      quizCreator: updatedUser,
+      quizSchema: MOCK_SCHEMA,
+
+      groups: [],
+      openSessions: [],
+      submission: [],
+    }
+    
+    await saveQuizToDatabase(newCtx);
+    logTest('QUIZ SAVED!');
+
+    // Redirect to the new quiz page
+    router.push(`/quiz/${newCtx.quizId}`);
   };
 
   // 2. Creation Handler
@@ -86,7 +126,8 @@ export default function Page() {
       <Dashboard 
         user={user} 
         onSelectQuiz={handleSelectQuiz} 
-        onCreateQuiz={handleCreateQuiz} 
+        onCreateQuiz={handleCreateQuiz}
+        addMockQuiz={handleMockQuiz} 
       />
     </div>
   );
