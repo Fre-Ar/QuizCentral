@@ -16,7 +16,7 @@ import { useOpenAPISending } from '@/hooks/ai';
 export default function Page() {
 
   const { leftSidebarWidth, rightSidebarWidth, selectedDivId, mainRef, handleMouseDown } = useDragging();
-  const { quizSession, setQuizSession }  = useQuizSession();
+  const { quizSession, setQuizSession } = useQuizSession();
   const [apiKey, setApiKey] = useState<string | null>(null);
   const { input, setInput, reply, isLoading, sendPrompt } = useOpenAPISending(apiKey);
   

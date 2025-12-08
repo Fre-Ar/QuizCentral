@@ -85,6 +85,44 @@ export async function fetchQuizContext(creatorId: string, quizId: string): Promi
 }
 
 
+export async function createQuiz(user: UserAccount, title: string): Promise<QuizContext | null> {
+  try {
+    const res = await fetch('/api/quizzes', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ 
+        title: title,
+        creatorId: user.googleId 
+      })
+    });
+
+    if (!res.ok) {
+      const err = await res.json();
+      throw new Error(err.error || "Failed to create quiz");
+    }
+
+    const rawData = await res.json();
+
+    // The API returns the structure of a QuizContext, but the 'quizCreator' inside it
+    // contains plain JSON objects for registries, not Maps.
+    // Since we already have the fully hydrated 'user' object in the client,
+    // we simply overlay it onto the response.
+    
+    return {
+      ...rawData,
+      quizCreator: user, // Use the client-side user object (preserves StyleRegistry Map)
+      groups: rawData.groups || [],
+      openSessions: rawData.openSessions || [],
+      submission: rawData.submission || []
+    };
+
+  } catch (error) {
+    console.error("createQuiz Error:", error);
+    return null;
+  }
+}
+
+
 // --- HELPER: JSON Object -> Map Reviver ---
 const objToMap = <V>(obj: Record<string, V> | any): Map<string, V> => {
   if (!obj) return new Map();

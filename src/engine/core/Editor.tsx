@@ -3,23 +3,15 @@ import { useSessionState } from "@/engine/hooks/useGlobalState";
 import { BlockFactory } from "@/engine/blocks/BlockFactory";
 import { MOCK_SCHEMA }  from "@/engine/blocks/MockQuiz";
 
-// --- THE RENDERER ---
+// --- THE EDITOR ---
 
-interface RenderProps {
-  renderDebug: boolean;
-}
-
-
-export const QuizRenderer: React.FC<RenderProps> = ({ renderDebug }) => {
+export const QuizEditor = () => {
   const { engine } = useQuizContext();
   
   // Subscribe to Session State (Navigation)
-  // We need to create 'useSessionState' hook first (see Step 3 below), 
-  // or just use engine.getStore().subscribe manually.
   const session = useSessionState((s) => s);
 
   // The engine has the "Real" schema with generated IDs.
-  // MOCK_SCHEMA is just the blueprint and might have undefined IDs.
   const schema = engine.getSchema();
 
   // Find Active Page
@@ -41,10 +33,10 @@ export const QuizRenderer: React.FC<RenderProps> = ({ renderDebug }) => {
       </div>
 
       {/* RIGHT: THE BRAIN (Debug) */}
-      {renderDebug && <div className="w-96 bg-black text-green-500 border border-gray-100 p-6 rounded-xl font-mono text-xs overflow-auto h-[80vh]">
+      <div className="w-96 bg-black text-green-500 border border-gray-100 p-6 rounded-xl font-mono text-xs overflow-auto h-[80vh]">
         <h3 className="text-white font-bold mb-4 uppercase tracking-wider">Engine State</h3>
         <pre>{JSON.stringify(session, null, 2)}</pre>
-      </div>}
+      </div>
     </div>
   );
 };
