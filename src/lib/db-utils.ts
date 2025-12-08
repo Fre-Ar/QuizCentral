@@ -1,5 +1,5 @@
 import { UserAccount, QuizContext, Group } from "@/engine/session/types";
-import { StyleRegistry, TemplateRegistry } from "@/engine/types/schema";
+import { StyleProperties, StyleRegistry, TemplateDefinition, TemplateRegistry } from "@/engine/types/schema";
 
 
 export async function saveQuizToDatabase(quizCtx: QuizContext) {
@@ -38,8 +38,8 @@ export async function fetchUserAccount(googleId: string): Promise<UserAccount | 
     // REVIVE MAPS: Convert plain JSON objects back to Maps for the Engine
     return {
       ...rawData,
-      styles: objToMap<any>(rawData.styles),
-      templates: objToMap<any>(rawData.templates),
+      styles: objToMap<StyleProperties>(rawData.styles),
+      templates: objToMap<TemplateDefinition>(rawData.templates),
       groups: objToMap<Group>(rawData.groups),
     };
   } catch (error) {

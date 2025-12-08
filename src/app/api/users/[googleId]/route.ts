@@ -1,15 +1,13 @@
 import { NextResponse } from 'next/server';
-import { supabase } from '@/lib/supabaseClient';
-import { Group } from '@/engine/session/types';
+import { supabase } from '@/lib/supabaseServer'; 
 
 export async function GET(
   request: Request,
   { params }: { params: { googleId: string } }
 ) {
-  const param = await params;
-  const googleId = param.googleId;
+  const { googleId } = await params; 
 
-  // 1. Fetch User Profile & Assets
+  // 1. Fetch User Profile
   const { data: user, error: userError } = await supabase
     .from('users')
     .select('*')
@@ -20,7 +18,7 @@ export async function GET(
     return NextResponse.json({ error: 'User not found' }, { status: 404 });
   }
 
-  // 2. Fetch Quiz Metadata (List of quizzes owned by user)
+  // 2. Fetch Quizzes (Metadata)
   const { data: quizzes, error: quizError } = await supabase
     .from('quizzes')
     .select('id, title')
@@ -34,34 +32,34 @@ export async function GET(
   const { data: groups, error: groupError } = await supabase
     .from('groups')
     .select('*')
-    .eq('creator_id', user.googleId);
+    .eq('creator_id', googleId);
 
   if (groupError) {
     return NextResponse.json({ error: 'Failed to load groups' }, { status: 500 });
   }
 
-  // 4. Construct Response (Groups as Object Map for JSON transfer)
-  const groupsMap: Map<string, Group> = new Map();
+  // 4. Transform Groups Array -> Plain Object
+  // We must send a Plain Object over JSON. The Client will turn this back into a Map.
+  const groupsObject: Record<string, any> = {};
   groups.forEach((g: any) => {
-    groupsMap.set(
-      g.id,
-      {
-        id: g.id, // id can be human readable as it is uniquely identified by its user creator and group id
-        name: g.name, 
-        emails: g.emails,
-        settings: g.settings
-      });
+    groupsObject[g.id] = {
+      id: g.id,
+      name: g.name,
+      emails: g.emails, // JSONB array from DB
+      settings: g.settings // JSONB object from DB
+    };
   });
 
+  // 5. Construct Payload
   const responsePayload = {
     googleId: user.google_id,
     email: user.email,
     userName: user.username,
     createdAt: user.created_at,
-    styles: user.styles || {},       // JSONB -> Object
-    templates: user.templates || {}, // JSONB -> Object
+    styles: user.styles || {},       
+    templates: user.templates || {}, 
     quizzes: quizzes || [],
-    groups: groupsMap                // Array -> Object Map
+    groups: groupsObject // Send Object, not Map as these can't be sent in JSON
   };
 
   return NextResponse.json(responsePayload);

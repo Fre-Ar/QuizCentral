@@ -8,6 +8,7 @@ import { useEffect } from "react";
 import { logTest } from "@/lib/utils";
 import { supabase } from "@/lib/supabaseClient";
 import { UserAccount } from "@/engine/session/types";
+import { fetchUserAccount } from "@/lib/db-utils";
 
 interface LoginButtonProps {
   style?: string;
@@ -20,28 +21,36 @@ const GoogleLoginButton: React.FC<LoginButtonProps> = () => {
   const login = useGoogleLogin({
     onSuccess: async (tokenResponse) => {
       try {
-        // 1. Send Access Token to Backend
-        const res = await fetch("/api/auth/google", {
+        console.log("1. Google Auth Success, verifying on server...");
+
+        // Step 1: Verify Identity & Upsert User Row
+        const authRes = await fetch("/api/auth/google", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ accessToken: tokenResponse.access_token }),
         });
-        logTest(res.body);
 
-        if (!res.ok) throw new Error("Login API Failed");
-
-        const { user } = (await res.json()) as { user: UserAccount };
-
-        // 2. Update Global State 
+        if (!authRes.ok) throw new Error("Auth Verification Failed");
         
-        setUser(user);
+        const { googleId } = await authRes.json();
+        console.log("2. Identity Verified. Google ID:", googleId);
 
-        // 3. Set Cookie for persistence
-        document.cookie = `googleId=${user.googleId}; path=/; max-age=${7 * 24 * 60 * 60}; secure; samesite=strict`;
+        // Step 2: Set Cookie (Data Persistence)
+        document.cookie = `googleId=${googleId}; path=/; max-age=${7 * 24 * 60 * 60}; secure; samesite=strict`;
 
-        // 4. Reload page
-        router.push("/"); 
+        // Step 3: Fetch Full Data (Quizzes, Styles, etc)
+        // We use the shared util function here so the logic matches the Context hydration logic
+        const userAccount = await fetchUserAccount(googleId);
 
+        if (!userAccount) throw new Error("Failed to load user data after login");
+
+        // Step 4: Update Global State
+        setUser(userAccount);
+        console.log("3. User Data Loaded into Context");
+
+        // Step 5: Reload page
+        router.push("/");
+        
       } catch (err) {
         console.error("Login Sequence Failed", err);
       }

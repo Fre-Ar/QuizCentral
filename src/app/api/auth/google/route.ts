@@ -1,18 +1,15 @@
 import { NextResponse } from "next/server";
-import { supabase } from "@/lib/supabaseServer";
-import { Group, UserAccount } from "@/engine/session/types";
+import { supabase } from "@/lib/supabaseServer"; // Ensure this uses Service Role Key
 
 export async function POST(req: Request) {
   try {
-    const body = await req.json();
-    const { accessToken } = body;
+    const { accessToken } = await req.json();
 
     if (!accessToken) {
         return NextResponse.json({ error: "Missing Access Token" }, { status: 400 });
     }
 
-    // 1. Verify Token & Get Info directly from Google
-    // Using the UserInfo endpoint is the safest way to validate an access token
+    // 1. Verify Token with Google
     const googleRes = await fetch("https://www.googleapis.com/oauth2/v3/userinfo", {
       headers: { Authorization: `Bearer ${accessToken}` },
     });
@@ -24,84 +21,34 @@ export async function POST(req: Request) {
     const googleData = await googleRes.json();
     const { sub: googleId, email, name } = googleData;
 
-    const user = {
-      name: name,
-      email: email,
-      googleId: googleId
-    }
-
-    // 2. DB Interaction: Create or Get User
-    // We use .select() to return the full row (including styles/templates if they exist)
-    const { data: userRow, error } = await supabase
+    // 2. Create or Update User (The "Populate" step)
+    // We strictly handle the User identity here. 
+    // We do NOT fetch quizzes/groups here.
+    const { error: upsertError } = await supabase
       .from("users")
       .upsert(
         {
-          google_id: user.googleId,
-          email: user.email,
-          username: user.name,
-          // We don't overwrite styles/templates here to preserve existing data
-          // Supabase upsert ignores columns not specified if the row exists,
-          // BUT to be safe in an upsert, we usually rely on default values for new rows.
+          google_id: googleId,
+          email: email,
+          username: name,
+          // Note: We rely on default empty JSONB for styles/templates for new users
         },
         { onConflict: "google_id" }
-      )
-      .select() // Return the fresh row
-      .single();
+      );
 
-    if (error) {
-      console.error("Supabase Login Error:", error);
-      return NextResponse.json({ error: error.message }, { status: 500 });
+    if (upsertError) {
+      console.error("Supabase Upsert Error:", upsertError);
+      return NextResponse.json({ error: upsertError.message }, { status: 500 });
     }
 
-    // 3. Fetch Metadata (Quizzes) 
-    // The 'users' table doesn't have the quiz list array column (it's relational),
-    // so we fetch it quickly here to satisfy the UserAccount interface.
-    const { data: quizzes } = await supabase
-      .from("quizzes")
-      .select("id, title")
-      .eq("creator_id", user.googleId);
-
-    // 3. Fetch Groups
-      const { data: groups, error: groupError } = await supabase
-        .from('groups')
-        .select('*')
-        .eq('creator_id', user.googleId);
-    
-      if (groupError) {
-        return NextResponse.json({ error: 'Failed to load groups' }, { status: 500 });
-      }
-    
-      // 4. Construct Response (Groups as Object Map for JSON transfer)
-      const groupsMap: Map<string, Group> = new Map();
-      groups.forEach((g: any) => {
-        groupsMap.set(
-          g.id,
-          {
-            id: g.id, // id can be human readable as it is uniquely identified by its user creator and group id
-            name: g.name, 
-            emails: g.emails,
-            settings: g.settings
-          });
-      });
-
-    // 4. Construct Final User Object
-    const fullUser: UserAccount = {
-      googleId: userRow.google_id,
-      email: userRow.email,
-      userName: userRow.name,
-      createdAt: userRow.created_at,
-      styles: userRow.styles || {},       // Handle JSONB -> Object
-      templates: userRow.templates || {}, // Handle JSONB -> Object
-      groups: groupsMap, 
-      quizzes: quizzes || []
-    };
-
+    // 3. Return only the ID. The client will use this to fetch the full profile.
     return NextResponse.json({
-      message: "Google Login Success",
-      user: fullUser,
+      message: "Identity Verified",
+      googleId: googleId,
     });
+
   } catch (error: any) {
-    console.error("SERVER ERROR DETAIL:", error); 
-    return NextResponse.json({ error: "Internal Server Error", details: error.message || String(error) }, { status: 500 });
+    console.error("Auth API Error:", error); 
+    return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
   }
 }

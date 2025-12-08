@@ -1,8 +1,9 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
-import { useGoogleId } from "@/hooks/googleId";
+import { useEffect, useState} from "react";
+import { useRouter } from "next/navigation";
 
+import { useGoogleId } from "@/hooks/googleId";
 import { QuizProvider} from "@/engine/hooks/useQuizContext";
 import { QuizRenderer }  from "@/engine/core/Renderer";
 
@@ -12,61 +13,82 @@ import { MockService } from "@/engine/session/MockService";
 import Header from '@/components/header';
 import { Dashboard } from "@/components/Dashboard";
 import { useUserContext } from "@/engine/hooks/useUserContext";
-import { fetchUserAccount } from "@/lib/db-utils";
+import { fetchUserAccount, fetchQuizContext } from "@/lib/db-utils";
 
 export default function Page() {
-  // 1. App State
-  const [ user, setUser ] = useState<UserAccount | null>(null);
+  const router = useRouter();
+  // 1. App State 
+  // The Context provides 'isLoading' so we know if we are still checking cookies/DB
+  const { user, isLoading: isUserLoading } = useUserContext();
+
   const [activeQuiz, setActiveQuiz] = useState<QuizContext | null>(null);
-  const [loading, setLoading] = useState(true);
-  const { googleId, setGoogleId } = useGoogleId();
+  const [isQuizLoading, setIsQuizLoading] = useState(false);
 
-  useEffect(() => {
-    MockService.getUser(googleId!).then((u) => {
-      setUser(u);
-      setLoading(false);
-    })
-  }, []);
-
-  // 2. Initial User Fetch
-  //const { user, setUser } = useUserContext();
-
-  /*if (!user) {
-  const { googleId, setGoogleId } = useGoogleId();
-    if (!googleId) console.warn("No googleId, please Log In"); // TODO: Add guardrails to fail gracefully
-
-
-
-    fetchUserAccount(googleId!).then((u) => {
-     setUser(u);
-     setLoading(false);
-    });
-  }, []);
-  } else setLoading(false);*/
-
-  // 3. Handlers
+  // 2. Handlers
   const handleSelectQuiz = async (quizId: string) => {
     if (!user) return;
-    setLoading(true);
-    const quizData = await MockService.getQuizContext(quizId, user);
-    setActiveQuiz(quizData);
-    setLoading(false);
+    setIsQuizLoading(true);
+    
+    // Switch to Real DB Utility
+    const quizData = await fetchQuizContext(user.googleId, quizId);
+    
+    if (quizData) {
+      setActiveQuiz(quizData);
+    } else {
+      console.error("Failed to load quiz");
+    }
+    setIsQuizLoading(false);
   };
 
   const handleCreateQuiz = async (title: string) => {
     if (!user) return;
-    setLoading(true);
-    const quizData = await MockService.createQuiz(user, title);
-    setActiveQuiz(quizData);
-    setLoading(false);
+    setIsQuizLoading(true);
+    
+    // Call your API to create a quiz
+    try {
+        const res = await fetch('/api/quizzes', { // You need to ensure this endpoint handles creation
+            method: 'POST',
+            body: JSON.stringify({ 
+                quizJson: { 
+                    // ... minimal context to trigger creation ...
+                    // Usually creation happens via a lighter endpoint than the full context save
+                    // For MVP, if MockService works for now, keep it, but plan to move to API.
+                } 
+            })
+        });
+        // For now, let's assume we reload or fetch the new context
+        setIsQuizLoading(false);
+    } catch (e) {
+        console.error(e);
+        setIsQuizLoading(false);
+    }
   };
 
   const handleBackToDashboard = () => {
     setActiveQuiz(null);
   };
 
-  // 4. Render Logic
-  if (loading) {
+  /*// 3. Handlers
+  const handleSelectQuiz = async (quizId: string) => {
+    if (!user) return;
+    setIsQuizLoading(true);
+    const quizData = await MockService.getQuizContext(quizId, user);
+    setActiveQuiz(quizData);
+    setIsQuizLoading(false);
+  };
+
+  const handleCreateQuiz = async (title: string) => {
+    if (!user) return;
+    setIsQuizLoading(true);
+    const quizData = await MockService.createQuiz(user, title);
+    setActiveQuiz(quizData);
+    setIsQuizLoading(false);
+  };*/
+
+  // 3. Render Logic
+
+  // A. Loading State (User or Quiz)
+  if (isUserLoading || isQuizLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
@@ -74,7 +96,22 @@ export default function Page() {
     );
   }
 
-  if (!user) return <div>Error loading user.</div>;
+  // B. Not Logged In
+  if (!user) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center p-4">
+        <h2 className="text-xl font-bold mb-4">Please Log In</h2>
+        <p className="text-gray-500 mb-6">You need an account to view the dashboard.</p>
+        {/* You could render <GoogleLoginButton /> here directly */}
+        <button 
+            onClick={() => router.push("/login")} // Assuming you have a login page
+            className="px-4 py-2 bg-blue-600 text-white rounded"
+        >
+            Go to Login
+        </button>
+      </div>
+    );
+  }
 
   // VIEW: QUIZ ACTIVE
   if (activeQuiz) {
